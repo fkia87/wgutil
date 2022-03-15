@@ -1,0 +1,184 @@
+#!/bin/bash
+
+# MAINIF is the name of server's main interface which is connected to the internet
+# DIR is related to clients (client's folder)
+
+BASEDIR='/etc/wireguard'
+MAINIF=eth0
+
+function readparams {
+if [[ $1 == "addif" ]]; then
+    read -p "Enter new IP for interface: " IFLOCALIP
+    read -p "Enter a new listening port: " PORT
+elif [[ $1 == "adduser" ]]; then
+    read -p "Enter client Wireguard IP: " LOCALIP
+fi
+}
+
+function setvars {
+mkdir -p $DIR
+
+if ! test -f $DIR/${USERNAME}.key; then
+    wg genkey | tee $DIR/${USERNAME}.key | wg pubkey | \
+    tee $DIR/${USERNAME}.key.pub > /dev/null
+else
+    echo "A private key already exists in \"$DIR\" for given username. We'll use that key."
+    echo "If you prefer a new key please manually remove the file: \"$DIR/${USERNAME}.key\" then try again."
+    cat $DIR/${USERNAME}.key | wg pubkey | tee $DIR/${USERNAME}.key.pub > /dev/null
+fi
+
+CLIENT_PRIVATE_KEY=$(cat $DIR/${USERNAME}.key)
+CLIENT_PUBLIC_KEY=$(cat $DIR/${USERNAME}.key.pub)
+SERVER_PUBLIC_KEY=$(wg | grep "public key" | cut -d ':' -f 2 | sed 's/^\s//')
+[[ $SERVER_PUBLIC_KEY != "" ]] || { echo "Error fetching server's public key."; exit 1; }
+PORT=$(wg |grep "listening port" | cut -d ':' -f 2 | sed 's/^\s//')
+}
+
+function getifip {
+# Returns IP of a given interface
+ip -4 a show dev $1 | grep 'inet ' | awk {'print $2'} | cut -d / -f 1
+}
+
+function genconfs {
+cat << EOF > $DIR/${USERNAME}.conf
+[Interface]
+PrivateKey = $CLIENT_PRIVATE_KEY
+Address = ${LOCALIP}/32
+DNS = $(getifip $INTERFACE)
+
+[Peer]
+PublicKey = $SERVER_PUBLIC_KEY
+AllowedIPs = 0.0.0.0/0
+Endpoint = $(getifip $MAINIF):$PORT
+EOF
+
+cat << EOF >> $BASEDIR/${INTERFACE}.conf
+[Peer]
+# $USERNAME
+PublicKey = $CLIENT_PUBLIC_KEY
+AllowedIPs = ${LOCALIP}/32
+EOF
+}
+
+function genif {
+mkdir -p -m 0700 $BASEDIR
+if [[ -f $BASEDIR/${INTERFACE}.privatekey ]]; then
+    echo "A private key already exists in \"$BASEDIR\" for given interface. We'll use that key."
+    echo "If you prefer a new key please manually remove the file: \"$BASEDIR/${INTERFACE}.privatekey\"\
+     then try again."
+else
+    umask 077; wg genkey | tee $BASEDIR/${INTERFACE}.privatekey | wg pubkey > $BASEDIR/${INTERFACE}.publickey
+fi
+cat << EOF > $BASEDIR/${INTERFACE}.conf
+[Interface]
+Address = ${IFLOCALIP}/24
+ListenPort = ${PORT}
+PrivateKey = $(cat $BASEDIR/${INTERFACE}.privatekey)
+PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o $MAINIF -j MASQUERADE
+PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o $MAINIF -j MASQUERADE
+EOF
+}
+
+function servicerestart {
+systemctl restart wg-quick@${INTERFACE}.service || { echo "Problem restarting Wireguard service."; exit 1; }
+}
+
+function usage {
+echo ""
+echo "Usage: $0 [adduser|deluser] USERNAME INTERFACE"
+echo "       $0 [addif|delif] INTERFACE"
+echo ""
+exit 1
+}
+
+function removeuser {
+ln=$(grep -nrm 1 "$USERNAME" $BASEDIR/${INTERFACE}.conf | cut -d : -f 1)
+if ! [[ -z $ln ]]; then
+    sed -i "$(($ln-1)),$(($ln+2))d" $BASEDIR/${INTERFACE}.conf
+fi
+}
+
+function checkname {
+if ! grep -e "# ${USERNAME}$" $BASEDIR/${INTERFACE}.conf; then
+    echo ok
+fi
+}
+
+function checkinterface {
+if [[ -f $BASEDIR/${INTERFACE}.conf ]]; then
+    echo exists
+fi
+}
+
+function startmsg {
+while :
+do
+    echo ""
+    echo -e "Interface \e[1;34m[$MAINIF]\e[0m with IP address \e[1;34m[$(getifip $MAINIF)]\e[0m \
+is selected as main external interface for this server."
+    read -p "Do you wish to continue? [Y/n]" START
+    echo ""
+    if [[ $START == "y" ]] || [[ $START == "Y" ]] || [[ $START == "" ]]; then break; fi
+    if [[ $START == "n" ]] || [[ $START == "N" ]]; then exit; fi
+done
+}
+############################################################################
+wg -v > /dev/null || { echo "Wireguard not installed."; exit 1; }
+qrencode -V > /dev/null 2>&1 || { echo "qrencode not installed."; exit 1; }
+[[ $UID == "0" ]] || { echo "You are not root."; exit 1; }
+
+if [[ $1 == "adduser" ]] || [[ $1 == "deluser" ]]; then
+    USERNAME=$2
+    INTERFACE=$3
+    
+    # Check if all parameters are present:
+    if [[ -z $USERNAME ]] || [[ -z $INTERFACE ]]; then
+        usage
+        exit 1
+    fi
+    startmsg
+    # Check if given INTERFACE exists:
+    [[ $(checkinterface) == "exists" ]] || { echo "Invalid Interface."; exit 1; }    
+    
+    DIR=$BASEDIR/clients/$USERNAME
+    
+    if [[ $1 == "adduser" ]]; then
+        readparams $1
+        [[ $(checkname) == "ok" ]] || { echo "Username exists."; exit 1; }
+        setvars
+        genconfs
+        servicerestart
+        echo "Use this config on your client side:"
+        echo ""
+        cat $DIR/${USERNAME}.conf
+        echo ""
+        echo "or this QR code:"
+        qrencode -t UTF8 < $DIR/${USERNAME}.conf
+    elif [[ $1 == "deluser" ]]; then
+        rm -rf $DIR
+        removeuser
+        servicerestart
+    fi
+elif [[ $1 == "addif" ]] || [[ $1 == "delif" ]]; then
+    INTERFACE=$2
+    if [[ -z $INTERFACE ]]; then
+        usage
+        exit 1
+    fi
+    startmsg
+    if [[ $1 == "addif" ]]; then
+        readparams $1
+        ! [[ $(checkinterface) == "exists" ]] || { echo "Interface exists."; exit 1; }
+        genif
+        servicerestart
+        echo "Successfully configured \"$INTERFACE\"."
+    elif [[ $1 == "delif" ]]; then
+        systemctl stop wg-quick@${INTERFACE}.service
+        rm -f $BASEDIR/${INTERFACE}.conf
+        echo "Successfully removed \"$INTERFACE\"."
+        echo "You can remove key files located in \"$BASEDIR\" manually."
+    fi
+else
+    usage
+fi
+
