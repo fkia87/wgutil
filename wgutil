@@ -36,7 +36,7 @@ PORT=$(wg |grep "listening port" | cut -d ':' -f 2 | sed 's/^\s//')
 
 function getifip {
 # Returns IP of a given interface
-ip -4 a show dev $1 | grep 'inet ' | awk {'print $2'} | cut -d / -f 1
+ip -4 a show dev $1 | grep 'inet ' | head -n 1 | awk {'print $2'} | cut -d / -f 1
 }
 
 function genconfs {
