@@ -7,5 +7,5 @@ This utility comes handy when you have installed "wireguard" module on your serv
 The script assumes "eth0" as the public interface on the server. In order to change that, change the variable `MAINIF` in the script to your public network interface.
 
 ### Requirements
-- wireguard
+- wireguard (Follow installation instructions for your distro [**here**](https://www.wireguard.com/install/))
 - qrencode
