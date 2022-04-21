@@ -123,7 +123,7 @@ is selected as main external interface for this server."
 done
 }
 ############################################################################
-wg -v > /dev/null || { echo "Wireguard not installed."; exit 1; }
+wg -v > /dev/null 2>&1 || { echo "Wireguard not installed."; exit 1; }
 qrencode -V > /dev/null 2>&1 || { echo "qrencode not installed."; exit 1; }
 [[ $UID == "0" ]] || { echo "You are not root."; exit 1; }
 
