@@ -123,6 +123,14 @@ is selected as main external interface for this server."
 done
 }
 ############################################################################
+if [[ $1 == "--help" ]] || [[ $1 == "-h" ]]; then
+    usage
+    exit 0
+elif [[ $# -lt 2 ]]; then
+    echo "Insufficient parameters."
+    exit 1
+fi
+
 unset command_not_found_handle
 wg -v > /dev/null 2>&1 || { echo "Wireguard not installed."; \
 echo "Please follow installation instructions here: \
