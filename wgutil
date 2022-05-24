@@ -58,6 +58,8 @@ cat << EOF >> $BASEDIR/${INTERFACE}.conf
 PublicKey = $CLIENT_PUBLIC_KEY
 AllowedIPs = ${LOCALIP}/32
 EOF
+
+qrencode -s 6 -o $DIR/${USERNAME}.png < $DIR/${USERNAME}.conf
 }
 
 function genif {
