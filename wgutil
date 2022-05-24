@@ -4,7 +4,11 @@
 # DIR is related to clients (client's folder)
 
 BASEDIR='/etc/wireguard'
-MAINIF=eth0
+MAINIF=$(ip route |grep default |rev|sed -e 's/^\s*//'|cut -d ' ' -f 1|rev)
+if [[ -z $MAINIF ]]; then
+    echo -e "\nCouldn't determine your main interface on the system.\n"
+    exit 1
+fi
 
 function readparams {
 if [[ $1 == "addif" ]]; then
@@ -22,8 +26,8 @@ if ! test -f $DIR/${USERNAME}.key; then
     wg genkey | tee $DIR/${USERNAME}.key | wg pubkey | \
     tee $DIR/${USERNAME}.key.pub > /dev/null
 else
-    echo "A private key already exists in \"$DIR\" for given username. We'll use that key."
-    echo "If you prefer a new key please manually remove the file: \"$DIR/${USERNAME}.key\" then try again."
+    echo -e "\nA private key already exists in \"$DIR\" for given username. We'll use that key."
+    echo -e "If you prefer a new key please manually remove the file: \"$DIR/${USERNAME}.key\" then try again.\n"
     cat $DIR/${USERNAME}.key | wg pubkey | tee $DIR/${USERNAME}.key.pub > /dev/null
 fi
 
@@ -65,9 +69,9 @@ qrencode -s 6 -o $DIR/${USERNAME}.png < $DIR/${USERNAME}.conf
 function genif {
 mkdir -p -m 0700 $BASEDIR
 if [[ -f $BASEDIR/${INTERFACE}.privatekey ]]; then
-    echo "A private key already exists in \"$BASEDIR\" for given interface. We'll use that key."
-    echo "If you prefer a new key please manually remove the file: \"$BASEDIR/${INTERFACE}.privatekey\"\
-     then try again."
+    echo -e "\nA private key already exists in \"$BASEDIR\" for given interface. We'll use that key."
+    echo -e "If you prefer a new key please manually remove the file: \"$BASEDIR/${INTERFACE}.privatekey\"\
+     then try again.\n"
 else
     umask 077; wg genkey | tee $BASEDIR/${INTERFACE}.privatekey | wg pubkey > $BASEDIR/${INTERFACE}.publickey
 fi
@@ -82,14 +86,12 @@ EOF
 }
 
 function servicerestart {
-systemctl restart wg-quick@${INTERFACE}.service || { echo "Problem restarting Wireguard service."; exit 1; }
+systemctl restart wg-quick@${INTERFACE}.service || { echo -e "\nProblem restarting Wireguard service.\n"; exit 1; }
 }
 
 function usage {
-echo ""
-echo "Usage: $0 [adduser|deluser] USERNAME INTERFACE"
-echo "       $0 [addif|delif] INTERFACE"
-echo ""
+echo -e "\nUsage: $0 [adduser|deluser] USERNAME INTERFACE"
+echo -e "       $0 [addif|delif] INTERFACE\n"
 exit 1
 }
 
@@ -115,8 +117,7 @@ fi
 function startmsg {
 while :
 do
-    echo ""
-    echo -e "Interface \e[1;34m[$MAINIF]\e[0m with IP address \e[1;34m[$(getifip $MAINIF)]\e[0m \
+    echo -e "\nInterface \e[1;34m[$MAINIF]\e[0m with IP address \e[1;34m[$(getifip $MAINIF)]\e[0m \
 is selected as main external interface for this server."
     read -p "Do you wish to continue? [Y/n]" START
     echo ""
@@ -129,15 +130,15 @@ if [[ $1 == "--help" ]] || [[ $1 == "-h" ]]; then
     usage
     exit 0
 elif [[ $# -lt 2 ]]; then
-    echo "Insufficient parameters."
+    echo -e "\nInsufficient parameters.\n"
     exit 1
 fi
 
 unset command_not_found_handle
-wg -v > /dev/null 2>&1 || { echo "Wireguard not installed."; \
-echo "Please follow installation instructions here: \
-https://www.wireguard.com/install/"; exit 1; }
-qrencode -V > /dev/null 2>&1 || { echo "qrencode not installed."; exit 1; }
+wg -v > /dev/null 2>&1 || { echo -e "\nWireguard not installed."; \
+echo -e "Please follow installation instructions here: \
+https://www.wireguard.com/install/\n"; exit 1; }
+qrencode -V > /dev/null 2>&1 || { echo -e "\nqrencode not installed.\n"; exit 1; }
 [[ $UID == "0" ]] || { echo "You are not root."; exit 1; }
 
 if [[ $1 == "adduser" ]] || [[ $1 == "deluser" ]]; then
@@ -161,11 +162,9 @@ if [[ $1 == "adduser" ]] || [[ $1 == "deluser" ]]; then
         setvars
         genconfs
         servicerestart
-        echo "Use this config on your client side:"
-        echo ""
+        echo -e "\nUse this config on your client side:\n"
         cat $DIR/${USERNAME}.conf
-        echo ""
-        echo "or this QR code:"
+        echo -e "\nor this QR code:\n"
         qrencode -t UTF8 < $DIR/${USERNAME}.conf
     elif [[ $1 == "deluser" ]]; then
         rm -rf $DIR
@@ -184,12 +183,12 @@ elif [[ $1 == "addif" ]] || [[ $1 == "delif" ]]; then
         ! [[ $(checkinterface) == "exists" ]] || { echo "Interface exists."; exit 1; }
         genif
         servicerestart
-        echo "Successfully configured \"$INTERFACE\"."
+        echo -e "\nSuccessfully configured \"$INTERFACE\".\n"
     elif [[ $1 == "delif" ]]; then
         systemctl stop wg-quick@${INTERFACE}.service
         rm -f $BASEDIR/${INTERFACE}.conf
-        echo "Successfully removed \"$INTERFACE\"."
-        echo "You can remove key files located in \"$BASEDIR\" manually."
+        echo -e "\nSuccessfully removed \"$INTERFACE\"."
+        echo -e "You can remove key files located in \"$BASEDIR\" manually.\n"
     fi
 else
     usage
