@@ -167,7 +167,12 @@ if [[ $1 == "adduser" ]] || [[ $1 == "deluser" ]]; then
         echo -e "\nor this QR code:\n"
         qrencode -t UTF8 < $DIR/${USERNAME}.conf
     elif [[ $1 == "deluser" ]]; then
-        rm -rf $DIR
+        read -p "Do you want to delete all user's configuration files? [y/N]" DEL
+        if [[ $DEL == "y" ]] || [[ $DEL == "Y" ]]; then
+            rm -rf $DIR;
+        else
+            echo -e "\nConfiguration files are remaining on the system.\n"
+        fi
         removeuser
         servicerestart
     fi
