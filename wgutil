@@ -4,11 +4,19 @@
 # DIR is related to clients (client's folder)
 
 BASEDIR='/etc/wireguard'
-MAINIF=$(ip route |grep default |rev|sed -e 's/^\s*//'|cut -d ' ' -f 1|rev)
+
+function find_mainif {
+iflist=( $(find /sys/class/net/ | rev | cut -d / -f1 | rev | sed '/^$/d') )
+tmp=( $(ip route |grep default |sed -e 's/^\s*//;s/\s/\n/g;') )
+
+for var in "${tmp[@]}"; do
+    [[ " ${iflist[*]} " =~ " ${var} " ]] && MAINIF=$var
+done
 if [[ -z $MAINIF ]]; then
     echo -e "\nCouldn't determine your main interface on the system.\n"
     exit 1
 fi
+}
 
 function readparams {
 if [[ $1 == "addif" ]]; then
@@ -115,6 +123,7 @@ fi
 }
 
 function startmsg {
+find_mainif
 while :
 do
     echo -e "\nInterface \e[1;34m[$MAINIF]\e[0m with IP address \e[1;34m[$(getifip $MAINIF)]\e[0m \
