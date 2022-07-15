@@ -1,6 +1,8 @@
 #!/bin/bash
 
 ###########################################################################
+#    A utility for creating and removing users and interfaces in a 
+#    wireguard server.
 #    Copyright (C) 2022  Farhad Kia
 #
 #    This program is free software: you can redistribute it and/or modify
