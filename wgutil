@@ -19,10 +19,12 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ###########################################################################
 
-# MAINIF is the name of server's main interface which is connected to the internet
-# DIR is related to clients (client's folder)
+# MAINIF is the name of server's main interface which is connected to the internet.
+# DIR is related to clients. (client's folder)
+# INTERFACE is the name of wireguard interface.
 
 BASEDIR='/etc/wireguard'
+declare -i PORT
 
 function find_mainif {
 iflist=( $(find /sys/class/net/ | rev | cut -d / -f1 | rev | sed '/^$/d') )
@@ -32,7 +34,7 @@ for var in "${tmp[@]}"; do
     [[ " ${iflist[*]} " =~ " ${var} " ]] && MAINIF=$var
 done
 if [[ -z $MAINIF ]]; then
-    echo -e "\nCouldn't determine your main interface on the system.\n"
+    echo -e "\nCouldn't determine the main interface on the system.\n"
     exit 1
 fi
 }
@@ -40,10 +42,39 @@ fi
 function readparams {
 if [[ $1 == "addif" ]]; then
     read -p "Enter new IP for interface: " IFLOCALIP
+    while ip -4 a | grep 'inet ' | awk {'print $2'} | grep $IFLOCALIP > /dev/null
+    do
+        echo -e "\nIP address in use. Try a different one.\n"
+        read -p "Enter new IP for interface: " IFLOCALIP
+    done
     read -p "Enter a new listening port: " PORT
+    while ss --no-header -4lun | awk {'print$4'} | cut -d : -f2 | grep $PORT > /dev/null \
+    || ! ((1024 < PORT && PORT < 65536))
+    do
+        echo -e "\nBusy or invalid port. Try a different port number.\n"
+        read -p "Enter a new listening port: " PORT
+    done
 elif [[ $1 == "adduser" ]]; then
-    read -p "Enter client Wireguard IP: " LOCALIP
+    read -p "Enter client Wireguard IP: [$(getlocalip)] " LOCALIP
+    while grep "$LOCALIP" $BASEDIR/${INTERFACE}.conf > /dev/null && ! [[ -z $LOCALIP ]]
+    do
+        echo -e "\nIP address in use. Try a different one.\n"
+        read -p "Enter client Wireguard IP: [$(getlocalip)] " LOCALIP
+    done
+    [[ -z $LOCALIP ]] && LOCALIP=$(getlocalip)
 fi
+}
+
+function getlocalip {
+declare -i o1 o2 o3 o4
+IFIP=$(grep 'Address' $BASEDIR/${INTERFACE}.conf | awk {'print$3'} | cut -d / -f1)
+IFS=. read -r o1 o2 o3 o4 <<< $IFIP
+((o4++))
+while grep $o1.$o2.$o3.$o4/ $BASEDIR/${INTERFACE}.conf > /dev/null
+do
+    ((o4++))
+done
+echo $o1.$o2.$o3.$o4
 }
 
 function setvars {
@@ -178,13 +209,13 @@ if [[ $1 == "adduser" ]] || [[ $1 == "deluser" ]]; then
         usage
         exit 1
     fi
-    startmsg
     # Check if given INTERFACE exists:
     [[ $(checkinterface) == "exists" ]] || { echo "Invalid Interface."; exit 1; }    
     
     DIR=$BASEDIR/clients/$USERNAME
     
     if [[ $1 == "adduser" ]]; then
+        startmsg
         readparams $1
         [[ $(checkname) == "ok" ]] || { echo "Username exists."; exit 1; }
         setvars
@@ -195,7 +226,7 @@ if [[ $1 == "adduser" ]] || [[ $1 == "deluser" ]]; then
         echo -e "\nor this QR code:\n"
         qrencode -t UTF8 < $DIR/${USERNAME}.conf
     elif [[ $1 == "deluser" ]]; then
-        read -p "Do you want to delete all user's configuration files? [y/N]" DEL
+        read -p "Do you want to delete all user's configuration files? [y/N] " DEL
         if [[ $DEL == "y" ]] || [[ $DEL == "Y" ]]; then
             rm -rf $DIR;
         else
@@ -203,6 +234,7 @@ if [[ $1 == "adduser" ]] || [[ $1 == "deluser" ]]; then
         fi
         removeuser
         servicerestart
+        echo -e "User \"${USERNAME}\" removed successfully."
     fi
 elif [[ $1 == "addif" ]] || [[ $1 == "delif" ]]; then
     INTERFACE=$2
@@ -210,8 +242,8 @@ elif [[ $1 == "addif" ]] || [[ $1 == "delif" ]]; then
         usage
         exit 1
     fi
-    startmsg
     if [[ $1 == "addif" ]]; then
+        startmsg
         readparams $1
         ! [[ $(checkinterface) == "exists" ]] || { echo "Interface exists."; exit 1; }
         genif
