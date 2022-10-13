@@ -39,6 +39,35 @@ if [[ -z $MAINIF ]]; then
 fi
 }
 
+function os {
+DISTRO=$(cat /etc/os-release | grep -e '^ID=' \
+| cut -d = -f 2 | sed -e 's/[[:punct:]]//g' \
+| tr [:upper:] [:lower:])
+echo $DISTRO
+}
+
+function install_pkg {
+case $(os) in
+centos | fedora)
+    while ! rpm -q $1 >/dev/null 2>&1
+    do
+        echo "Installing $1..."
+        yum -y install $1
+        sleep 1
+    done
+;;
+ubuntu)
+    while ! dpkg -l | grep $1 >/dev/null 2>&1
+    do
+        echo "Installing $1..."
+        apt update
+        apt -y install $1
+        sleep 1
+    done
+;;
+esac
+}
+
 function readparams {
 case $1 in
 addif)
@@ -77,7 +106,8 @@ while grep $o1.$o2.$o3.$o4/ $BASEDIR/${INTERFACE}.conf > /dev/null
 do
     ((o4++))
 done
-echo $o1.$o2.$o3.$o4
+[[ $o4 > 254 ]] && { echo "IP range full"; return }
+echo "$o1.$o2.$o3.$o4"
 }
 
 function setvars {
@@ -152,8 +182,9 @@ systemctl restart wg-quick@${INTERFACE}.service || { echo -e "\nProblem restarti
 }
 
 function usage {
-echo -e "\nUsage: $0 [adduser|deluser] USERNAME INTERFACE"
-echo -e "       $0 [addif|delif] INTERFACE\n"
+echo -e "\nUsage: $0 [adduser|deluser] USERNAME INTERFACE" >&2
+echo -e "       $0 [addif|delif] INTERFACE\n" >&2
+echo -e "       $0 install\n" >&2
 exit 1
 }
 
@@ -191,17 +222,20 @@ done
 ############################################################################
 if [[ $1 == "--help" ]] || [[ $1 == "-h" ]]; then
     usage
-    exit 0
-elif [[ $# -lt 2 ]]; then
-    echo -e "\nInsufficient parameters.\n"
+elif [[ $1 != "install" ]] && [[ $# -lt 2 ]]; then
+    echo -e "\nInsufficient parameters.\n" >&2
     exit 1
 fi
 
 unset command_not_found_handle
-wg -v > /dev/null 2>&1 || { echo -e "\nWireguard not installed."; \
-echo -e "Please follow installation instructions here: \
-https://www.wireguard.com/install/\n"; exit 1; }
-qrencode -V > /dev/null 2>&1 || { echo -e "\nqrencode not installed.\n"; exit 1; }
+
+wg -v > /dev/null 2>&1 || { echo -e "\n\"Wireguard\" is not installed." >&2;
+echo -e "You can run this command to install it:\n" >&2;
+echo -e "       $0 install\n" >&2;
+exit 1; }
+
+qrencode -V > /dev/null 2>&1 || { echo -e "\n\"qrencode\" is not installed.\n"; exit 1; }
+
 [[ $UID == "0" ]] || { echo "You are not root."; exit 1; }
 
 case $1 in
@@ -212,7 +246,6 @@ adduser | deluser)
     # Check if all parameters are present:
     if [[ -z $USERNAME ]] || [[ -z $INTERFACE ]]; then
         usage
-        exit 1
     fi
     # Check if given INTERFACE exists:
     [[ $(checkinterface) == "exists" ]] || { echo "Invalid Interface."; exit 1; }    
@@ -249,7 +282,6 @@ addif | delif)
     INTERFACE=$2
     if [[ -z $INTERFACE ]]; then
         usage
-        exit 1
     fi
     case $1 in
     addif)
@@ -271,6 +303,28 @@ addif | delif)
         systemctl stop wg-quick@${INTERFACE}.service
         rm -f $BASEDIR/${INTERFACE}.conf
         echo -e "\nSuccessfully removed \"$INTERFACE\"."
+        ;;
+    esac
+    ;;
+install)
+    wg -v > /dev/null 2>&1 && { echo -e "\nAlready installed!"; exit 1; }
+    case "$(os)" in
+    centos)
+        install_pkg epel-release
+        install_pkg elrepo-release
+        install_pkg yum-plugin-elrepo
+        ;;
+    ubuntu | debian)
+        install_pkg wireguard
+        ;;
+    fedora)
+        install_pkg wireguard-tools
+        ;;
+    *)
+        echo -e "Automatic installation is not supported for your distribution." >&2
+        echo -e "Please follow instructions here to install \"Wireguard\" manually:" >&2
+        echo -e "https://www.wireguard.com/install/\n" >&2
+        exit 1
         ;;
     esac
     ;;
