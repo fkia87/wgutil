@@ -40,7 +40,8 @@ fi
 }
 
 function readparams {
-if [[ $1 == "addif" ]]; then
+case $1 in
+addif)
     read -p "Enter new IP for interface: " IFLOCALIP
     while ip -4 a | grep 'inet ' | awk {'print $2'} | grep $IFLOCALIP > /dev/null
     do
@@ -54,7 +55,8 @@ if [[ $1 == "addif" ]]; then
         echo -e "\nBusy or invalid port. Try a different port number.\n"
         read -p "Enter a new listening port: " PORT
     done
-elif [[ $1 == "adduser" ]]; then
+    ;;
+adduser)
     read -p "Enter client Wireguard IP: [$(getlocalip)] " LOCALIP
     while grep "$LOCALIP" $BASEDIR/${INTERFACE}.conf > /dev/null && ! [[ -z $LOCALIP ]]
     do
@@ -62,7 +64,8 @@ elif [[ $1 == "adduser" ]]; then
         read -p "Enter client Wireguard IP: [$(getlocalip)] " LOCALIP
     done
     [[ -z $LOCALIP ]] && LOCALIP=$(getlocalip)
-fi
+    ;;
+esac
 }
 
 function getlocalip {
@@ -85,7 +88,8 @@ if ! test -f $DIR/${USERNAME}.key; then
     tee $DIR/${USERNAME}.key.pub > /dev/null
 else
     echo -e "\nA private key already exists in \"$DIR\" for given username. We'll use that key."
-    echo -e "If you prefer a new key please manually remove the file: \"$DIR/${USERNAME}.key\" then try again.\n"
+    echo -e "If you prefer a new key please manually remove the file: \"$DIR/${USERNAME}.key\""
+    echo -e "then try again.\n"
     cat $DIR/${USERNAME}.key | wg pubkey | tee $DIR/${USERNAME}.key.pub > /dev/null
 fi
 
@@ -128,8 +132,8 @@ function genif {
 mkdir -p -m 0700 $BASEDIR
 if [[ -f $BASEDIR/${INTERFACE}.privatekey ]]; then
     echo -e "\nA private key already exists in \"$BASEDIR\" for given interface. We'll use that key."
-    echo -e "If you prefer a new key please manually remove the file: \"$BASEDIR/${INTERFACE}.privatekey\"\
-     then try again.\n"
+    echo -e "If you prefer a new key please manually remove the file: \"$BASEDIR/${INTERFACE}.privatekey\""
+    echo -e "then try again.\n"
 else
     umask 077; wg genkey | tee $BASEDIR/${INTERFACE}.privatekey | wg pubkey > $BASEDIR/${INTERFACE}.publickey
 fi
@@ -200,7 +204,8 @@ https://www.wireguard.com/install/\n"; exit 1; }
 qrencode -V > /dev/null 2>&1 || { echo -e "\nqrencode not installed.\n"; exit 1; }
 [[ $UID == "0" ]] || { echo "You are not root."; exit 1; }
 
-if [[ $1 == "adduser" ]] || [[ $1 == "deluser" ]]; then
+case $1 in
+adduser | deluser)
     USERNAME=$2
     INTERFACE=$3
     
@@ -214,7 +219,8 @@ if [[ $1 == "adduser" ]] || [[ $1 == "deluser" ]]; then
     
     DIR=$BASEDIR/clients/$USERNAME
     
-    if [[ $1 == "adduser" ]]; then
+    case $1 in
+    adduser)
         startmsg
         readparams $1
         [[ $(checkname) == "ok" ]] || { echo "Username exists."; exit 1; }
@@ -225,7 +231,8 @@ if [[ $1 == "adduser" ]] || [[ $1 == "deluser" ]]; then
         cat $DIR/${USERNAME}.conf
         echo -e "\nor this QR code:\n"
         qrencode -t UTF8 < $DIR/${USERNAME}.conf
-    elif [[ $1 == "deluser" ]]; then
+        ;;
+    deluser)
         read -p "Do you want to delete all user's configuration files? [y/N] " DEL
         if [[ $DEL == "y" ]] || [[ $DEL == "Y" ]]; then
             rm -rf $DIR;
@@ -235,27 +242,40 @@ if [[ $1 == "adduser" ]] || [[ $1 == "deluser" ]]; then
         removeuser
         servicerestart
         echo -e "User \"${USERNAME}\" removed successfully."
-    fi
-elif [[ $1 == "addif" ]] || [[ $1 == "delif" ]]; then
+        ;;
+    esac
+    ;;
+addif | delif)
     INTERFACE=$2
     if [[ -z $INTERFACE ]]; then
         usage
         exit 1
     fi
-    if [[ $1 == "addif" ]]; then
+    case $1 in
+    addif)
         startmsg
         readparams $1
         ! [[ $(checkinterface) == "exists" ]] || { echo "Interface exists."; exit 1; }
         genif
         servicerestart
         echo -e "\nSuccessfully configured \"$INTERFACE\".\n"
-    elif [[ $1 == "delif" ]]; then
+        ;;
+    delif)
+        read -p "Do you want to delete all interface configuration files? [y/N] " DEL
+        if [[ $DEL == "y" ]] || [[ $DEL == "Y" ]]; then
+            rm -f $BASEDIR/$INTERFACE*;
+        else
+            echo -e "\nConfiguration files are remaining on the system."
+            echo -e "You can remove key files located in \"$BASEDIR\" manually.\n"
+        fi
         systemctl stop wg-quick@${INTERFACE}.service
         rm -f $BASEDIR/${INTERFACE}.conf
         echo -e "\nSuccessfully removed \"$INTERFACE\"."
-        echo -e "You can remove key files located in \"$BASEDIR\" manually.\n"
-    fi
-else
+        ;;
+    esac
+    ;;
+*)
     usage
-fi
+    ;;
+esac
 
