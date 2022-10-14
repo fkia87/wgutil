@@ -51,7 +51,7 @@ while grep $o1.$o2.$o3.$o4/ $BASEDIR/${INTERFACE}.conf > /dev/null
 do
     ((o4++))
 done
-[[ $o4 > 254 ]] && { echo "range_full"; return; }
+(( $o4 > 254 )) && { echo "range_full"; return; }
 echo "$o1.$o2.$o3.$o4"
 }
 
@@ -72,7 +72,7 @@ CLIENT_PRIVATE_KEY=$(cat $DIR/${USERNAME}.key)
 CLIENT_PUBLIC_KEY=$(cat $DIR/${USERNAME}.key.pub)
 SERVER_PUBLIC_KEY=$(wg | grep "public key" | cut -d ':' -f 2 | sed 's/^\s//')
 [[ $SERVER_PUBLIC_KEY != "" ]] || { echo "Error fetching server's public key."; exit 1; }
-PORT=$(wg |grep "listening port" | cut -d ':' -f 2 | sed 's/^\s//')
+PORT=$(wg show ${INTERFACE} | grep "listening port" | cut -d ':' -f 2 | sed 's/^\s*//')
 }
 
 function genconfs {
@@ -197,7 +197,7 @@ adduser | deluser)
         [[ $(checkname) == "ok" ]] || { echo "Username exists."; exit 1; }
         setvars
         genconfs
-        systemctl reload wg-quick@${INTERFACE}.service
+        systemctl reload-or-restart wg-quick@${INTERFACE}.service
         echo -e "\nUse this config on your client side:\n"
         cat $DIR/${USERNAME}.conf
         echo -e "\nor this QR code:\n"
@@ -211,7 +211,7 @@ adduser | deluser)
             echo -e "\nConfiguration files are remaining on the system.\n"
         fi
         removeuser
-        systemctl reload wg-quick@${INTERFACE}.service
+        systemctl reload-or-restart wg-quick@${INTERFACE}.service
         echo -e "User \"${USERNAME}\" removed successfully."
         ;;
     esac
