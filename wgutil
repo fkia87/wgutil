@@ -230,6 +230,7 @@ addif | delif)
         genif
         systemctl enable wg-quick@${INTERFACE}.service --now
         echo -e "\nSuccessfully configured \"$INTERFACE\".\n"
+        echo -e "\nInstall and configure \"Bind\" to listen on newly created interface if necessary.\n"
         ;;
     delif)
         systemctl stop wg-quick@${INTERFACE}.service
