@@ -7,6 +7,7 @@
 source resources/pkg_management
 source resources/os
 source resources/network
+source resources/bash_colors
 
 BASEDIR='/etc/wireguard'
 declare -i PORT
@@ -62,16 +63,16 @@ if ! test -f $DIR/${USERNAME}.key; then
     wg genkey | tee $DIR/${USERNAME}.key | wg pubkey | \
     tee $DIR/${USERNAME}.key.pub > /dev/null
 else
-    echo -e "\nA private key already exists in \"$DIR\" for given username. We'll use that key."
-    echo -e "If you prefer a new key please manually remove the file: \"$DIR/${USERNAME}.key\""
-    echo -e "then try again.\n"
+    echo -e "${YELLOW}\nA private key already exists in \"$DIR\" for given username. We'll use that key."
+    echo -e "${YELLOW}If you prefer a new key please manually remove the file: \"$DIR/${USERNAME}.key\""
+    echo -e "${YELLOW}then try again.\n${DECOLOR}"
     cat $DIR/${USERNAME}.key | wg pubkey | tee $DIR/${USERNAME}.key.pub > /dev/null
 fi
 
 CLIENT_PRIVATE_KEY=$(cat $DIR/${USERNAME}.key)
 CLIENT_PUBLIC_KEY=$(cat $DIR/${USERNAME}.key.pub)
 SERVER_PUBLIC_KEY=$(wg | grep "public key" | cut -d ':' -f 2 | sed 's/^\s//')
-[[ $SERVER_PUBLIC_KEY != "" ]] || { echo "Error fetching server's public key."; exit 1; }
+[[ $SERVER_PUBLIC_KEY != "" ]] || { echo -e "${RED}Error fetching server's public key.${DECOLOR}"; exit 1; }
 PORT=$(wg show ${INTERFACE} | grep "listening port" | cut -d ':' -f 2 | sed 's/^\s*//')
 }
 
@@ -101,9 +102,9 @@ qrencode -s 6 -o $DIR/${USERNAME}.png < $DIR/${USERNAME}.conf
 function genif {
 mkdir -p -m 0700 $BASEDIR
 if [[ -f $BASEDIR/${INTERFACE}.privatekey ]]; then
-    echo -e "\nA private key already exists in \"$BASEDIR\" for given interface. We'll use that key."
-    echo -e "If you prefer a new key please manually remove the file: \"$BASEDIR/${INTERFACE}.privatekey\""
-    echo -e "then try again.\n"
+    echo -e "${YELLOW}\nA private key already exists in \"$BASEDIR\" for given interface. We'll use that key."
+    echo -e "${YELLOW}If you prefer a new key please manually remove the file: \"$BASEDIR/${INTERFACE}.privatekey\""
+    echo -e "${YELLOW}then try again.\n${DECOLOR}"
 else
     umask 077; wg genkey | tee $BASEDIR/${INTERFACE}.privatekey | wg pubkey > $BASEDIR/${INTERFACE}.publickey
 fi
@@ -147,7 +148,7 @@ function startmsg {
 find_mainif
 while :
 do
-    echo -e "\nInterface \e[1;34m[$MAINIF]\e[0m with IP address \e[1;34m[$(getifip $MAINIF)]\e[0m \
+    echo -e "\nInterface ${BLUE}[$MAINIF]${DECOLOR} with IP address \e[1;34m[$(getifip $MAINIF)]\e[0m \
 is selected as main external interface for this server."
     read -p "Do you wish to continue? [Y/n]" START
     echo ""
@@ -157,22 +158,22 @@ done
 }
 
 function checkinstall {
-wg -v > /dev/null 2>&1 || { echo -e "\n\"Wireguard\" is not installed." >&2;
-echo -e "You can run this command to install it:\n" >&2;
-echo -e "       $0 install\n" >&2;
+wg -v > /dev/null 2>&1 || { echo -e "${RED}\n\"Wireguard\" is not installed." >&2;
+echo -e "${RED}You can run this command to install it:\n" >&2;
+echo -e "${RED}       $0 install\n${DECOLOR}" >&2;
 exit 1; }
 }
 ############################################################################
 if [[ $1 == "--help" ]] || [[ $1 == "-h" ]]; then
     usage
 elif [[ $1 != "install" ]] && [[ $# -lt 2 ]]; then
-    echo -e "\nInsufficient parameters.\n" >&2
+    echo -e "${RED}\nInsufficient parameters.\n${DECOLOR}" >&2
     exit 1
 fi
 
 unset command_not_found_handle
 
-[[ $UID == "0" ]] || { echo "You are not root."; exit 1; }
+checkuser
 
 case $1 in
 adduser | deluser)
@@ -185,22 +186,23 @@ adduser | deluser)
         usage
     fi
     # Check if given INTERFACE exists:
-    [[ $(checkinterface) == "exists" ]] || { echo "Invalid Interface."; exit 1; }    
+    [[ $(checkinterface) == "exists" ]] || { echo -e "${RED}Invalid Interface.${DECOLOR}" >&2; exit 1; }    
     
     DIR=$BASEDIR/clients/$USERNAME
     
     case $1 in
     adduser)
-        qrencode -V > /dev/null 2>&1 || { echo -e "\n\"qrencode\" is not installed.\n"; exit 1; }
+        qrencode -V > /dev/null 2>&1 || { echo -e "${RED}\n\"qrencode\" is not installed.\n${DECOLOR}" >&2; exit 1; }
         startmsg
         readparams $1
-        [[ $(checkname) == "ok" ]] || { echo "Username exists."; exit 1; }
+        [[ $(checkname) == "ok" ]] || { echo -e "${RED}Username exists.${DECOLOR}" >&2; exit 1; }
         setvars
         genconfs
         systemctl reload-or-restart wg-quick@${INTERFACE}.service
-        echo -e "\nUse this config on your client side:\n"
+        echo -e "${GREEN}\nUser added successfully!${DECOLOR}"
+        echo -e "${GREEN}\nUse this config on your client side:\n${DECOLOR}"
         cat $DIR/${USERNAME}.conf
-        echo -e "\nor this QR code:\n"
+        echo -e "${GREEN}\nor this QR code:\n${DECOLOR}"
         qrencode -t UTF8 < $DIR/${USERNAME}.conf
         ;;
     deluser)
@@ -212,7 +214,7 @@ adduser | deluser)
         fi
         removeuser
         systemctl reload-or-restart wg-quick@${INTERFACE}.service
-        echo -e "User \"${USERNAME}\" removed successfully."
+        echo -e "${GREEN}User \"${USERNAME}\" removed successfully.${DECOLOR}"
         ;;
     esac
     ;;
@@ -229,8 +231,9 @@ addif | delif)
         ! [[ $(checkinterface) == "exists" ]] || { echo "Interface exists."; exit 1; }
         genif
         systemctl enable wg-quick@${INTERFACE}.service --now
-        echo -e "\nSuccessfully configured \"$INTERFACE\".\n"
-        echo -e "\nInstall and configure \"Bind\" to listen on newly created interface if necessary.\n"
+        echo -e "${GREEN}\nSuccessfully configured \"$INTERFACE\".\n"
+        echo -e "${GREEN}\nInstall and configure ${BGREEN}\"Bind\"${GREEN} to \
+listen on newly created interface if necessary.\n${DECOLOR}"
         ;;
     delif)
         systemctl stop wg-quick@${INTERFACE}.service
@@ -242,12 +245,12 @@ addif | delif)
             echo -e "You can remove key files located in \"$BASEDIR\" manually.\n"
         fi
         rm -f $BASEDIR/${INTERFACE}.conf
-        echo -e "\nSuccessfully removed \"$INTERFACE\"."
+        echo -e "${GREEN}\nSuccessfully removed \"$INTERFACE\".${DECOLOR}"
         ;;
     esac
     ;;
 install)
-    wg -v > /dev/null 2>&1 && { echo -e "\nAlready installed!\n"; exit 1; }
+    wg -v > /dev/null 2>&1 && { echo -e "${YELLOW}\nAlready installed!\n${DECOLOR}" >&2; exit 1; }
     enable_ipforward
     case $(os) in
     centos)
@@ -264,9 +267,9 @@ install)
         install_pkg wireguard-tools
         ;;
     *)
-        echo -e "Automatic installation is not supported for your distribution." >&2
-        echo -e "Please follow instructions here to install \"Wireguard\" manually:" >&2
-        echo -e "https://www.wireguard.com/install/\n" >&2
+        echo -e "${RED}Automatic installation is not supported for your distribution." >&2
+        echo -e "${RED}Please follow instructions here to install \"Wireguard\" manually:" >&2
+        echo -e "${RED}https://www.wireguard.com/install/\n${DECOLOR}" >&2
         exit 1
         ;;
     esac
