@@ -8,7 +8,7 @@ A utility for installing wireguard, creating and removing users and interfaces.
 
 * Clone project using this command: 
 
-    `git clone --recurse-submodules <github-url>`
+    `git clone <github-url>`
 
 * Then run `wgutil --help` to see the manual.
 
