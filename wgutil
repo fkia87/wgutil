@@ -242,7 +242,7 @@ adduser | deluser)
     esac
     ;;
 lsuser)
-    ls --format=single-column /etc/wireguard/clients/
+    ls --format=single-column $BASEDIR/clients/
     checkinstall
     ;;
 getuser)
