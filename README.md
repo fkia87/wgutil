@@ -1,8 +1,5 @@
 # wgutil
-A utility for installing wireguard, creating and removing users and interfaces.
-
-## Requirements
-- qrencode
+A utility for installing wireguard and managing its users and interfaces.
 
 ## How to use:
 
@@ -12,4 +9,4 @@ A utility for installing wireguard, creating and removing users and interfaces.
 
 * Then run `wgutil --help` to see the manual.
 
-Note that "Wireguard" requires a name server to be installed and configured on server to work properly. This script does not install or manage that.
+Note that "Wireguard" requires a name server to be installed on server to work properly. This script does not install or manage that.
