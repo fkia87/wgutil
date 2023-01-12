@@ -239,6 +239,7 @@ adduser | deluser)
     ;;
 lsuser)
     ls --format=single-column /etc/wireguard/clients/
+    checkinstall
     ;;
 getuser)
     qrencode -V > /dev/null 2>&1 || { echo -e "${RED}\n\"qrencode\" is not installed.\n${DECOLOR}" >&2; exit 1; }
@@ -251,6 +252,7 @@ getuser)
     cat $DIR/${USERNAME}.conf
     echo -e "${GREEN}\nor this QR code:\n${DECOLOR}"
     qrencode -t UTF8 < $DIR/${USERNAME}.conf
+    checkinstall
     ;;
 addif | delif)
     checkinstall
@@ -284,6 +286,7 @@ listen on newly created interface if necessary.\n${DECOLOR}"
     esac
     ;;
 lsif)
+    checkinstall
     wg | grep interface | awk '{print $2}'
     ;;
 install)
