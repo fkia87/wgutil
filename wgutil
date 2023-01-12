@@ -291,7 +291,7 @@ listen on newly created interface if necessary.\n${DECOLOR}"
     ;;
 lsif)
     checkinstall
-    wg | grep interface | awk '{print $2}'
+    wg show interfaces
     ;;
 install)
     wg -v > /dev/null 2>&1 && { echo -e "${YELLOW}\nAlready installed!\n${DECOLOR}" >&2; exit 1; }
