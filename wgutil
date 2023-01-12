@@ -10,6 +10,7 @@ if ! [[ -f ${files[0]} ]] \
 || ! [[ -f ${files[1]} ]] \
 || ! [[ -f ${files[2]} ]] \
 || ! [[ -f ${files[3]} ]]; then
+    rm -rf resources
     git clone https://github.com/fkia87/resources.git || \
     { echo -e "Error downloading required files from Github.
 Check if \"Git\" is installed and your internet connection is OK." >&2; \
@@ -132,6 +133,9 @@ EOF
 function usage {
 echo -e "\nUsage: $0 [adduser|deluser] USERNAME INTERFACE" >&2
 echo -e "       $0 [addif|delif] INTERFACE" >&2
+echo -e "       $0 lsif" >&2
+echo -e "       $0 lsuser" >&2
+echo -e "       $0 getuser" >&2
 echo -e "       $0 install\n" >&2
 exit 1
 }
@@ -177,7 +181,10 @@ exit 1; }
 ############################################################################
 if [[ $1 == "--help" ]] || [[ $1 == "-h" ]]; then
     usage
-elif [[ $1 != "install" ]] && [[ $# -lt 2 ]]; then
+elif [[ $1 != "install" ]] \
+    && [[ $1 != "lsif" ]] \
+    && [[ $1 != "lsuser" ]] \
+    && [[ $# -lt 2 ]]; then
     echo -e "${RED}\nInsufficient parameters.\n${DECOLOR}" >&2
     exit 1
 fi
@@ -227,7 +234,23 @@ adduser | deluser)
         systemctl reload-or-restart wg-quick@${INTERFACE}.service
         echo -e "${GREEN}User \"${USERNAME}\" removed successfully.${DECOLOR}"
         ;;
+    
     esac
+    ;;
+lsuser)
+    ls --format=single-column /etc/wireguard/clients/
+    ;;
+getuser)
+    qrencode -V > /dev/null 2>&1 || { echo -e "${RED}\n\"qrencode\" is not installed.\n${DECOLOR}" >&2; exit 1; }
+    USERNAME=$2
+    DIR=$BASEDIR/clients/$USERNAME
+
+    [[ ! -d $DIR ]] && { echo -e "${RED}User doesn't exist.${DECOLOR}" >&2; exit 1; }
+
+    echo -e "${GREEN}\nUse this config on your client side:\n${DECOLOR}"
+    cat $DIR/${USERNAME}.conf
+    echo -e "${GREEN}\nor this QR code:\n${DECOLOR}"
+    qrencode -t UTF8 < $DIR/${USERNAME}.conf
     ;;
 addif | delif)
     checkinstall
@@ -259,6 +282,9 @@ listen on newly created interface if necessary.\n${DECOLOR}"
         echo -e "${GREEN}\nSuccessfully removed \"$INTERFACE\".${DECOLOR}"
         ;;
     esac
+    ;;
+lsif)
+    wg | grep interface | awk '{print $2}'
     ;;
 install)
     wg -v > /dev/null 2>&1 && { echo -e "${YELLOW}\nAlready installed!\n${DECOLOR}" >&2; exit 1; }
