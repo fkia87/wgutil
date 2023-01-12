@@ -178,6 +178,10 @@ echo -e "${RED}You can run this command to install it:\n" >&2;
 echo -e "${RED}       $0 install\n${DECOLOR}" >&2;
 exit 1; }
 }
+
+function checkinstall_qrencode {
+qrencode -V > /dev/null 2>&1 || { echo -e "${RED}\n\"qrencode\" is not installed.\n${DECOLOR}" >&2; exit 1; }
+}
 ############################################################################
 if [[ $1 == "--help" ]] || [[ $1 == "-h" ]]; then
     usage
@@ -210,7 +214,7 @@ adduser | deluser)
     
     case $1 in
     adduser)
-        qrencode -V > /dev/null 2>&1 || { echo -e "${RED}\n\"qrencode\" is not installed.\n${DECOLOR}" >&2; exit 1; }
+        checkinstall_qrencode
         startmsg
         readparams $1
         [[ $(checkname) == "ok" ]] || { echo -e "${RED}Username exists.${DECOLOR}" >&2; exit 1; }
@@ -242,7 +246,7 @@ lsuser)
     checkinstall
     ;;
 getuser)
-    qrencode -V > /dev/null 2>&1 || { echo -e "${RED}\n\"qrencode\" is not installed.\n${DECOLOR}" >&2; exit 1; }
+    checkinstall_qrencode
     USERNAME=$2
     DIR=$BASEDIR/clients/$USERNAME
 
