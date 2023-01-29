@@ -242,7 +242,9 @@ adduser | deluser)
     esac
     ;;
 lsuser)
-    ls --format=single-column $BASEDIR/clients/
+    for cl in $(find $BASEDIR/clients/ -maxdepth 1 | sed 's/.*\///g;/^\s*$/d';); do
+        echo -e "${cl}\t$(cat $BASEDIR/clients/${cl}/${cl}.conf | grep Address | cut -d '=' -f2)"
+    done
     checkinstall
     ;;
 getuser)
