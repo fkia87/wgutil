@@ -4,6 +4,10 @@
 # DIR is related to clients. (client's folder)
 # INTERFACE is the name of wireguard interface.
 
+# TO DO:
+# -> add folder separation for clients between interfaces
+# -> add firewall function on "addif" and "delif"
+
 files=("resources/pkg_management" "resources/os" "resources/network" "resources/bash_colors")
 
 if ! [[ -f ${files[0]} ]] \
@@ -83,7 +87,7 @@ fi
 
 CLIENT_PRIVATE_KEY=$(cat $DIR/${USERNAME}.key)
 CLIENT_PUBLIC_KEY=$(cat $DIR/${USERNAME}.key.pub)
-SERVER_PUBLIC_KEY=$(wg | grep "public key" | cut -d ':' -f 2 | sed 's/^\s//')
+SERVER_PUBLIC_KEY=$(wg show ${INTERFACE}| grep "public key" | cut -d ':' -f 2 | sed 's/^\s//')
 [[ $SERVER_PUBLIC_KEY != "" ]] || { echo -e "${RED}Error fetching server's public key.${DECOLOR}"; exit 1; }
 PORT=$(wg show ${INTERFACE} | grep "listening port" | cut -d ':' -f 2 | sed 's/^\s*//')
 }
@@ -276,6 +280,8 @@ addif | delif)
         echo -e "${GREEN}\nSuccessfully configured \"$INTERFACE\".\n"
         echo -e "${GREEN}\nInstall and configure ${BGREEN}\"Bind\"${GREEN} to \
 listen on newly created interface if necessary.\n${DECOLOR}"
+        ufw allow ${PORT}/udp > /dev/null 2>&1 || \
+        echo -e "${YELLOW}Couldn't open UDP port ${PORT} in firewall. Please open it manually.${DECOLOR}"
         ;;
     delif)
         systemctl stop wg-quick@${INTERFACE}.service
