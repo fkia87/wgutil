@@ -32,28 +32,28 @@ declare -i PORT
 readparams() {
 case $1 in
     addif)
-        read -p -r "Enter IP for interface: " IFLOCALIP
+        read -r -p "Enter IP for interface: " IFLOCALIP
         while ip -4 a | grep 'inet ' | awk '{print $2}' | grep "$IFLOCALIP" > /dev/null
         do
             echo -e "\nIP address in use. Try a different one.\n"
-            read -p -r "Enter IP for interface: " IFLOCALIP
+            read -r -p "Enter IP for interface: " IFLOCALIP
         done
-        read -p -r "Enter listening port: " PORT
+        read -r -p "Enter listening port: " PORT
         while ss --no-header -4lun | awk '{print$4}' | cut -d : -f2 | grep $PORT > /dev/null \
         || ! ((1024 < PORT && PORT < 65536))
         do
             echo -e "\nBusy or invalid port. Try a different port number.\n"
-            read -p -r "Enter listening port: " PORT
+            read -r -p "Enter listening port: " PORT
         done
         ;;
     adduser)
         tmpip=$(calculate_ip)
         [[ $tmpip == "range_full" ]] && { echo -e "\nIP range full. Please delete a user." >&2; exit 1; }
-        read -p -r "Enter client Wireguard IP: [$tmpip] " LOCALIP
+        read -r -p "Enter client Wireguard IP: [$tmpip] " LOCALIP
         while grep "$LOCALIP" $BASEDIR/"${INTERFACE}".conf > /dev/null && [[ -n $LOCALIP ]]
         do
             echo -e "\nIP address in use. Try a different one.\n"
-            read -p -r "Enter client Wireguard IP: [$tmpip] " LOCALIP
+            read -r -p "Enter client Wireguard IP: [$tmpip] " LOCALIP
         done
         [[ -z $LOCALIP ]] && LOCALIP=$tmpip
         ;;
@@ -170,7 +170,7 @@ while :
 do
     echo -e "\nInterface ${BLUE}[$MAINIF]${DECOLOR} with IP address \e[1;34m[$(getifip "$MAINIF")]\e[0m \
 is selected as main external interface for this server."
-    read -p -r "Do you wish to continue? [Y/n]" START
+    read -r -p "Do you wish to continue? [Y/n]" START
     echo ""
     if [[ $START == "y" ]] || [[ $START == "Y" ]] || [[ $START == "" ]]; then break; fi
     if [[ $START == "n" ]] || [[ $START == "N" ]]; then exit; fi
@@ -233,7 +233,7 @@ case $1 in
                 qrencode -t UTF8 < "$DIR"/"${USERNAME}".conf
                 ;;
             deluser)
-                read -p -r "Do you want to delete all user's configuration files? [y/N] " DEL
+                read -r -p "Do you want to delete all user's configuration files? [y/N] " DEL
                 if [[ $DEL == "y" ]] || [[ $DEL == "Y" ]]; then
                     rm -rf "$DIR";
                 else
@@ -285,7 +285,7 @@ listen on newly created interface if necessary.\n${DECOLOR}"
                 ;;
             delif)
                 systemctl stop wg-quick@"${INTERFACE}".service
-                read -p -r "Do you want to delete all interface configuration files? [y/N] " DEL
+                read -r -p "Do you want to delete all interface configuration files? [y/N] " DEL
                 if [[ $DEL == "y" ]] || [[ $DEL == "Y" ]]; then
                     rm -f $BASEDIR/"$INTERFACE"*;
                 else
