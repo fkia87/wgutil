@@ -336,7 +336,7 @@ case $1 in
         echo -e "Backup created: $BASEDIR/${HOSTNAME}_${INTERFACE}.backup.tar"
         cd "$current_dir" || exit 1
         exit 0
-    ;;
+        ;;
     restore)
         BACKUP_FILE=$2
         [[ $(file -b --extension "$BACKUP_FILE") == "tar/gtar" ]] || \
@@ -348,7 +348,7 @@ case $1 in
         rm "$BASEDIR/${BACKUP_FILE##*/}"
         echo "Restored successfully."
         cd "$current_dir" || exit 1
-    ;;
+        ;;
     *)
         usage
         ;;
