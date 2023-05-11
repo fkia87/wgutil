@@ -182,7 +182,8 @@ checkinstall() {
 }
 
 checkinstall_qrencode() {
-    qrencode -V > /dev/null 2>&1 || { echo -e "${RED}\n\"qrencode\" is not installed.\n${DECOLOR}" >&2; exit 1; }
+    qrencode -V > /dev/null 2>&1 || \
+        { echo -e "${RED}\n\"qrencode\" is not installed.\n${DECOLOR}" >&2; exit 1; }
 }
 
 ###############################################################################################################
@@ -326,6 +327,28 @@ case $1 in
                 ;;
         esac
         ;;
+    backup)
+        [[ -z $2 ]] && { echo "Please give the interface name." >&2; exit 1; }
+        INTERFACE=$2
+        current_dir=$PWD
+        cd "$BASEDIR" || { echo "Couldn't access $BASEDIR" >&2; exit 1; }
+        tar -cf "$HOSTNAME"_"$INTERFACE".backup.tar ./"$INTERFACE"* && \
+        echo -e "Backup created: $BASEDIR/${HOSTNAME}_${INTERFACE}.backup.tar"
+        cd "$current_dir" || exit 1
+        exit 0
+    ;;
+    restore)
+        BACKUP_FILE=$2
+        [[ $(file -b --extension "$BACKUP_FILE") == "tar/gtar" ]] || \
+            { echo "Invalid backup file: $BACKUP_FILE" >&2; exit 1; }
+        current_dir=$PWD
+        cp "$BACKUP_FILE" "$BASEDIR"
+        cd "$BASEDIR" || { echo "Couldn't access $BASEDIR" >&2; exit 1; }
+        tar -xf "$BASEDIR/${BACKUP_FILE##*/}"
+        rm "$BASEDIR/${BACKUP_FILE##*/}"
+        echo "Restored successfully."
+        cd "$current_dir" || exit 1
+    ;;
     *)
         usage
         ;;
