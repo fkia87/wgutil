@@ -26,6 +26,7 @@ for file in ${requirements[@]}; do
 done
 
 BASEDIR='/etc/wireguard'
+DEFAULTIF="wg0"
 declare -i PORT
 
 readparams() {
@@ -136,7 +137,7 @@ usage() {
     echo -e "\nUsage: $0 [adduser|deluser] USERNAME INTERFACE" >&2
     echo -e "       $0 [addif|delif] INTERFACE" >&2
     echo -e "       $0 lsif" >&2
-    echo -e "       $0 lsuser" >&2
+    echo -e "       $0 lsuser INTERFACE" >&2
     echo -e "       $0 getuser USERNAME INTERFACE" >&2
     echo -e "       $0 install\n" >&2
     exit 1
@@ -246,8 +247,8 @@ case $1 in
         esac
         ;;
     lsuser)
-        for cl in $(find $BASEDIR/"$INTERFACE"/clients/ -maxdepth 1 | sed 's/.*\///g;/^\s*$/d'); do
-            echo -e "$cl\t$(grep "Address" $BASEDIR/"$INTERFACE/clients/$cl/$cl".conf | cut -d '=' -f2)"
+        for cl in $(find $BASEDIR/"${2:-$DEFAULTIF}"/clients/ -maxdepth 1 | sed 's/.*\///g;/^\s*$/d'); do
+            echo -e "$cl\t$(grep "Address" $BASEDIR/"${2:-$DEFAULTIF}/clients/$cl/$cl".conf | cut -d '=' -f2)"
         done
         checkinstall
         ;;
@@ -326,8 +327,7 @@ case $1 in
         esac
         ;;
     backup)
-        [[ -z $2 ]] && { echo "Please give the interface name." >&2; exit 1; }
-        INTERFACE=$2
+        INTERFACE=${2:-$DEFAULTIF}
         current_dir=$PWD
         cd "$BASEDIR" || { echo "Couldn't access $BASEDIR" >&2; exit 1; }
         tar -cf "$HOSTNAME"_"$INTERFACE".backup.tar ./"$INTERFACE"* && \
