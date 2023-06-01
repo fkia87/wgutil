@@ -8,18 +8,17 @@
 # TO DO:
 # -> add firewall function on "delif"
 
-files=("resources/pkg_management" "resources/os" "resources/network" "resources/bash_colors")
-
-if ! [[ -f ${files[0]} ]] \
-|| ! [[ -f ${files[1]} ]] \
-|| ! [[ -f ${files[2]} ]] \
-|| ! [[ -f ${files[3]} ]]; then
-    rm -rf resources
-    git clone https://github.com/fkia87/resources.git || \
-    { echo -e "Error downloading required files from Github.
-Check if \"Git\" is installed and your internet connection is OK." >&2; \
-    exit 1; }
-fi
+files=("resources/utils" "resources/network" "resources/bash_colors")
+for ((i=0; i<${#requirements[@]}; i++)); do
+    if ! [[ -d resources ]] || ! [[ -f ${requirements[i]} ]]; then
+        rm -rf resources
+        wget https://github.com/fkia87/resources/archive/refs/heads/master.zip || \
+        { echo -e "Error downloading required files from Github." >&2; exit 1; }
+        unzip master.zip || { echo -e "Command \"unzip master.zip\" failed." >&2; exit 1; }
+        mv resources* resources
+        break
+    fi
+done
 
 for file in ${files[@]}; do
     source "$file"
