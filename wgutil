@@ -127,8 +127,8 @@ genif() {
 Address = ${IFLOCALIP}/24
 ListenPort = ${PORT}
 PrivateKey = $(cat $BASEDIR/"${INTERFACE}".privatekey)
-PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o $MAINIF -j MASQUERADE
-PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o $MAINIF -j MASQUERADE
+PostUp = iptables -I INPUT -p udp --dport $PORT -j ACCEPT; iptables -I FORWARD -o %i -j ACCEPT; iptables -I FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o $MAINIF -j MASQUERADE
+PostDown = iptables -D INPUT -p udp --dport $PORT -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o $MAINIF -j MASQUERADE
 EOF
 }
 
