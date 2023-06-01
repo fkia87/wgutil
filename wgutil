@@ -15,6 +15,7 @@ for ((i=0; i<${#requirements[@]}; i++)); do
         wget https://github.com/fkia87/resources/archive/refs/heads/master.zip || \
         { echo -e "Error downloading required files from Github." >&2; exit 1; }
         unzip master.zip || { echo -e "Command \"unzip master.zip\" failed." >&2; exit 1; }
+        rm -f master.zip
         mv resources* resources
         break
     fi
