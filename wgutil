@@ -134,11 +134,11 @@ EOF
 }
 
 usage() {
-    echo -e "\nUsage: $0 [adduser|deluser] USERNAME INTERFACE" >&2
-    echo -e "       $0 [addif|delif] INTERFACE" >&2
+    echo -e "\nUsage: $0 <adduser|deluser> USERNAME INTERFACE" >&2
+    echo -e "       $0 <addif|delif> INTERFACE" >&2
     echo -e "       $0 lsif" >&2
-    echo -e "       $0 lsuser INTERFACE" >&2
-    echo -e "       $0 getuser USERNAME INTERFACE" >&2
+    echo -e "       $0 lsuser [INTERFACE]" >&2
+    echo -e "       $0 getuser USERNAME [INTERFACE]" >&2
     echo -e "       $0 install\n" >&2
     exit 1
 }
@@ -255,7 +255,7 @@ case $1 in
     getuser)
         checkinstall_qrencode
         USERNAME=$2
-        INTERFACE=$3
+        INTERFACE=${3:-$DEFAULTIF}
         DIR=$BASEDIR/$INTERFACE/clients/$USERNAME
 
         [[ ! -d $DIR ]] && { echo -e "${RED}User doesn't exist for given interface.${DECOLOR}" >&2; exit 1; }
