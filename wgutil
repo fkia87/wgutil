@@ -8,7 +8,7 @@
 # TO DO:
 # -> add firewall function on "delif"
 
-files=("resources/utils" "resources/network" "resources/bash_colors")
+requirements=("resources/utils" "resources/network" "resources/bash_colors")
 for ((i=0; i<${#requirements[@]}; i++)); do
     if ! [[ -d resources ]] || ! [[ -f ${requirements[i]} ]]; then
         rm -rf resources
