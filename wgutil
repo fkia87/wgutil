@@ -315,7 +315,7 @@ case $1 in
             ubuntu | debian)
                 install_pkg wireguard
                 ;;
-            fedora)
+            fedora | almalinux)
                 install_pkg wireguard-tools
                 ;;
             *)
