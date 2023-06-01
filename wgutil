@@ -20,7 +20,7 @@ for ((i=0; i<${#requirements[@]}; i++)); do
     fi
 done
 
-for file in ${files[@]}; do
+for file in ${requirements[@]}; do
     source "$file"
 done
 
