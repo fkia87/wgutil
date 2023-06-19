@@ -62,10 +62,10 @@ readparams() {
 
 calculate_ip() {
     declare -i o1 o2 o3 o4
-    IFIP=$(grep 'Address' $BASEDIR/"${INTERFACE}".conf | awk '{print$3}' | cut -d / -f1)
+    IFIP=$(grep 'Address' $BASEDIR/"$INTERFACE"/"$INTERFACE".conf | awk '{print$3}' | cut -d / -f1)
     IFS=. read -r o1 o2 o3 o4 <<< "$IFIP"
     ((o4++))
-    while grep $o1.$o2.$o3.$o4/ $BASEDIR/"${INTERFACE}".conf > /dev/null
+    while grep $o1.$o2.$o3.$o4/ $BASEDIR/"$INTERFACE"/"$INTERFACE".conf > /dev/null
     do
         ((o4++))
     done
@@ -75,21 +75,21 @@ calculate_ip() {
 
 setvars() {
     mkdir -p "$DIR"
-    if ! test -f "$DIR"/"${USERNAME}".key; then
-        wg genkey | tee "$DIR"/"${USERNAME}".key | wg pubkey | \
-        tee "$DIR"/"${USERNAME}".key.pub > /dev/null
+    if ! test -f "$DIR"/"$USERNAME".key; then
+        wg genkey | tee "$DIR"/"$USERNAME".key | wg pubkey | \
+        tee "$DIR"/"$USERNAME".key.pub > /dev/null
     else
         echo -e "${YELLOW}\nA private key already exists in \"$DIR\" for given username. We'll use that key."
-        echo -e "${YELLOW}If you prefer a new key please manually remove the file: \"$DIR/${USERNAME}.key\""
+        echo -e "${YELLOW}If you prefer a new key please manually remove the file: \"$DIR/$USERNAME.key\""
         echo -e "${YELLOW}then try again.\n${DECOLOR}"
-        wg pubkey < "$DIR"/"${USERNAME}".key | tee "$DIR"/"${USERNAME}".key.pub > /dev/null
+        wg pubkey < "$DIR"/"$USERNAME".key | tee "$DIR"/"$USERNAME".key.pub > /dev/null
     fi
 
-    CLIENT_PRIVATE_KEY=$(cat "$DIR"/"${USERNAME}".key)
-    CLIENT_PUBLIC_KEY=$(cat "$DIR"/"${USERNAME}".key.pub)
-    SERVER_PUBLIC_KEY=$(wg show "${INTERFACE}"| grep "public key" | cut -d ':' -f 2 | sed 's/^\s//')
+    CLIENT_PRIVATE_KEY=$(cat "$DIR"/"$USERNAME".key)
+    CLIENT_PUBLIC_KEY=$(cat "$DIR"/"$USERNAME".key.pub)
+    SERVER_PUBLIC_KEY=$(wg show "$INTERFACE"| grep "public key" | cut -d ':' -f 2 | sed 's/^\s//')
     [[ $SERVER_PUBLIC_KEY != "" ]] || { echo -e "${RED}Error fetching server's public key.${DECOLOR}"; exit 1; }
-    PORT=$(wg show "${INTERFACE}" | grep "listening port" | cut -d ':' -f 2 | sed 's/^\s*//')
+    PORT=$(wg show "$INTERFACE" | grep "listening port" | cut -d ':' -f 2 | sed 's/^\s*//')
 }
 
 genconfs() {
@@ -105,29 +105,30 @@ AllowedIPs = 0.0.0.0/0
 Endpoint = $(getifip "$MAINIF"):$PORT
 EOF
 
-    cat << EOF >> $BASEDIR/"${INTERFACE}".conf
+    cat << EOF >> $BASEDIR/"${INTERFACE}"/"${INTERFACE}".conf
 [Peer]
 # $USERNAME
 PublicKey = $CLIENT_PUBLIC_KEY
 AllowedIPs = ${LOCALIP}/32
 EOF
-    qrencode -s 6 -o "$DIR"/"${USERNAME}".png < "$DIR"/"${USERNAME}".conf
+    qrencode -s 6 -o "$DIR"/"$USERNAME".png < "$DIR"/"$USERNAME".conf
 }
 
 genif() {
     mkdir -p $BASEDIR; chmod 0700 $BASEDIR
-    if [[ -f $BASEDIR/${INTERFACE}.privatekey ]]; then
+    if [[ -f $BASEDIR/$INTERFACE/$INTERFACE.privatekey ]]; then
         echo -e "${YELLOW}\nA private key already exists in \"$BASEDIR\" for given interface. We'll use that key."
-        echo -e "${YELLOW}If you prefer a new key please manually remove the file: \"$BASEDIR/${INTERFACE}.privatekey\""
+        echo -e "${YELLOW}If you prefer a new key please manually remove the file: \"$BASEDIR/$INTERFACE/$INTERFACE.privatekey\""
         echo -e "${YELLOW}then try again.\n${DECOLOR}"
     else
-        umask 077; wg genkey | tee $BASEDIR/"${INTERFACE}".privatekey | wg pubkey > $BASEDIR/"${INTERFACE}".publickey
+        umask 077; wg genkey | tee $BASEDIR/"$INTERFACE"/"$INTERFACE".privatekey | \
+            wg pubkey > $BASEDIR/"$INTERFACE"/"$INTERFACE".publickey
     fi
-    cat << EOF > $BASEDIR/"${INTERFACE}".conf
+    cat << EOF > $BASEDIR/"$INTERFACE"/"$INTERFACE".conf
 [Interface]
 Address = ${IFLOCALIP}/24
 ListenPort = ${PORT}
-PrivateKey = $(cat $BASEDIR/"${INTERFACE}".privatekey)
+PrivateKey = $(cat $BASEDIR/"$INTERFACE"/"$INTERFACE".privatekey)
 PostUp = iptables -I INPUT -p udp --dport $PORT -j ACCEPT; iptables -I FORWARD -o %i -j ACCEPT; iptables -I FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o $MAINIF -j MASQUERADE
 PostDown = iptables -D INPUT -p udp --dport $PORT -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o $MAINIF -j MASQUERADE
 EOF
@@ -144,20 +145,20 @@ usage() {
 }
 
 removeuser() {
-    ln=$(grep -nrm 1 "$USERNAME" $BASEDIR/"${INTERFACE}".conf | cut -d : -f 1)
+    ln=$(grep -nrm 1 "$USERNAME" "$BASEDIR/$INTERFACE/$INTERFACE.conf" | cut -d : -f 1)
     if [[ -n $ln ]]; then
-        sed -i "$((ln-1)),$((ln+2))d" $BASEDIR/"${INTERFACE}".conf
+        sed -i "$((ln-1)),$((ln+2))d" "$BASEDIR/$INTERFACE/$INTERFACE.conf"
     fi
 }
 
 checkname() {
-    if ! grep -e "# ${USERNAME}$" $BASEDIR/"${INTERFACE}".conf; then
+    if ! grep -e "# ${USERNAME}$" "$BASEDIR/$INTERFACE/$INTERFACE.conf"; then
         echo ok
     fi
 }
 
 checkinterface() {
-    if [[ -f $BASEDIR/${INTERFACE}.conf ]]; then
+    if [[ -f $BASEDIR/$INTERFACE/$INTERFACE.conf ]]; then
         echo "exists"
     fi
 }
@@ -216,7 +217,7 @@ case $1 in
         # Check if given INTERFACE exists:
         [[ $(checkinterface) == "exists" ]] || { echo -e "${RED}Invalid Interface.${DECOLOR}" >&2; exit 1; }
         
-        DIR=$BASEDIR/$INTERFACE/clients/$USERNAME
+        DIR="$BASEDIR/$INTERFACE/clients/$USERNAME"
         
         case $1 in
             adduser)
@@ -226,12 +227,12 @@ case $1 in
                 [[ $(checkname) == "ok" ]] || { echo -e "${RED}Username exists.${DECOLOR}" >&2; exit 1; }
                 setvars
                 genconfs
-                systemctl reload-or-restart wg-quick@"${INTERFACE}".service
+                systemctl reload-or-restart wg-quick@"$INTERFACE".service
                 echo -e "${GREEN}\nUser added successfully!${DECOLOR}"
                 echo -e "${GREEN}\nUse this config on your client side:\n${DECOLOR}"
-                cat "$DIR"/"${USERNAME}".conf
+                cat "$DIR/$USERNAME.conf"
                 echo -e "${GREEN}\nor this QR code:\n${DECOLOR}"
-                qrencode -t UTF8 < "$DIR"/"${USERNAME}".conf
+                qrencode -t UTF8 < "$DIR/$USERNAME.conf"
                 ;;
             deluser)
                 read -r -p "Do you want to delete all user's configuration files? [y/N] " DEL
@@ -241,14 +242,14 @@ case $1 in
                     echo -e "\nConfiguration files are remaining on the system.\n"
                 fi
                 removeuser
-                systemctl reload-or-restart wg-quick@"${INTERFACE}".service
-                echo -e "${GREEN}User \"${USERNAME}\" removed successfully.${DECOLOR}"
+                systemctl reload-or-restart wg-quick@"$INTERFACE".service
+                echo -e "${GREEN}User \"$USERNAME\" removed successfully.${DECOLOR}"
                 ;;
         esac
         ;;
     lsuser)
-        for cl in $(find $BASEDIR/"${2:-$DEFAULTIF}"/clients/ -maxdepth 1 | sed 's/.*\///g;/^\s*$/d'); do
-            echo -e "$cl\t$(grep "Address" $BASEDIR/"${2:-$DEFAULTIF}/clients/$cl/$cl".conf | cut -d '=' -f2)"
+        for cl in $(find "$BASEDIR/${2:-$DEFAULTIF}/clients/" -maxdepth 1 | sed 's/.*\///g;/^\s*$/d'); do
+            echo -e "$cl\t$(grep "Address" "$BASEDIR/${2:-$DEFAULTIF}/clients/$cl/$cl".conf | cut -d '=' -f2)"
         done
         checkinstall
         ;;
@@ -256,14 +257,14 @@ case $1 in
         checkinstall_qrencode
         USERNAME=$2
         INTERFACE=${3:-$DEFAULTIF}
-        DIR=$BASEDIR/$INTERFACE/clients/$USERNAME
+        DIR="$BASEDIR/$INTERFACE/clients/$USERNAME"
 
         [[ ! -d $DIR ]] && { echo -e "${RED}User doesn't exist for given interface.${DECOLOR}" >&2; exit 1; }
 
         echo -e "${GREEN}\nUse this config on your client side:\n${DECOLOR}"
         cat "$DIR"/"${USERNAME}".conf
         echo -e "${GREEN}\nor this QR code:\n${DECOLOR}"
-        qrencode -t UTF8 < "$DIR"/"${USERNAME}".conf
+        qrencode -t UTF8 < "$DIR/$USERNAME.conf"
         checkinstall
         ;;
     addif | delif)
@@ -278,21 +279,23 @@ case $1 in
                 readparams "$1"
                 ! [[ $(checkinterface) == "exists" ]] || { echo "Interface exists."; exit 1; }
                 genif
-                systemctl enable wg-quick@"${INTERFACE}".service --now
+                systemctl enable wg-quick@"$INTERFACE".service --now
                 echo -e "${GREEN}\nSuccessfully configured.\"$INTERFACE\"\n"
                 echo -en "${GREEN}\nInstall and configure ${BGREEN}\"Bind\"${GREEN} to listen on newly created interface"
                 echo -e " if necessary.\n${DECOLOR}"
+                ufw allow $PORT/udp > /dev/null 2>&1 || \
+                echo -e "${YELLOW}Couldn't open UDP port $PORT in firewall. Please open it manually.${DECOLOR}"
                 ;;
             delif)
-                systemctl stop wg-quick@"${INTERFACE}".service
+                systemctl stop wg-quick@"$INTERFACE".service
                 read -r -p "Do you want to delete all interface configuration files? [y/N] " DEL
                 if [[ $DEL =~ ^[yY] ]]; then
-                    rm -f $BASEDIR/"$INTERFACE"*;
+                    rm -f "$BASEDIR/$INTERFACE"*;
                 else
                     echo -e "\nConfiguration files are remaining on the system."
                     echo -e "You can remove key files located in \"$BASEDIR\" manually.\n"
                 fi
-                rm -f $BASEDIR/"${INTERFACE}".conf
+                rm -f "$BASEDIR/$INTERFACE.conf"
                 echo -e "${GREEN}\nSuccessfully removed \"$INTERFACE\".${DECOLOR}"
                 ;;
         esac
@@ -328,9 +331,9 @@ case $1 in
         ;;
     backup)
         INTERFACE=${2:-$DEFAULTIF}
-        current_dir=$PWD
+        current_dir="$PWD"
         cd "$BASEDIR" || { echo "Couldn't access $BASEDIR" >&2; exit 1; }
-        tar -cf "$HOSTNAME"_"$INTERFACE".backup.tar ./"$INTERFACE"* && \
+        tar -cf "${HOSTNAME}_${INTERFACE}.backup.tar ./$INTERFACE"* && \
         echo -e "Backup created: $BASEDIR/${HOSTNAME}_${INTERFACE}.backup.tar"
         cd "$current_dir" || exit 1
         exit 0
@@ -339,7 +342,7 @@ case $1 in
         BACKUP_FILE=$2
         [[ $(file -b --extension "$BACKUP_FILE") == "tar/gtar" ]] || \
             { echo "Invalid backup file: $BACKUP_FILE" >&2; exit 1; }
-        current_dir=$PWD
+        current_dir="$PWD"
         cp "$BACKUP_FILE" "$BASEDIR"
         cd "$BASEDIR" || { echo "Couldn't access $BASEDIR" >&2; exit 1; }
         tar -xf "$BASEDIR/${BACKUP_FILE##*/}"
