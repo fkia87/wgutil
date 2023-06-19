@@ -62,10 +62,10 @@ readparams() {
 
 calculate_ip() {
     declare -i o1 o2 o3 o4
-    IFIP=$(grep 'Address' $BASEDIR/"$INTERFACE"/"$INTERFACE".conf | awk '{print$3}' | cut -d / -f1)
+    IFIP=$(grep 'Address' $BASEDIR/"$INTERFACE".conf | awk '{print$3}' | cut -d / -f1)
     IFS=. read -r o1 o2 o3 o4 <<< "$IFIP"
     ((o4++))
-    while grep $o1.$o2.$o3.$o4/ $BASEDIR/"$INTERFACE"/"$INTERFACE".conf > /dev/null
+    while grep $o1.$o2.$o3.$o4/ $BASEDIR/"$INTERFACE".conf > /dev/null
     do
         ((o4++))
     done
@@ -124,7 +124,7 @@ genif() {
         umask 077; wg genkey | tee $BASEDIR/"$INTERFACE"/"$INTERFACE".privatekey | \
             wg pubkey > $BASEDIR/"$INTERFACE"/"$INTERFACE".publickey
     fi
-    cat << EOF > $BASEDIR/"$INTERFACE"/"$INTERFACE".conf
+    cat << EOF > $BASEDIR/"$INTERFACE".conf
 [Interface]
 Address = ${IFLOCALIP}/24
 ListenPort = ${PORT}
@@ -145,20 +145,20 @@ usage() {
 }
 
 removeuser() {
-    ln=$(grep -nrm 1 "$USERNAME" "$BASEDIR/$INTERFACE/$INTERFACE.conf" | cut -d : -f 1)
+    ln=$(grep -nrm 1 "$USERNAME" "$BASEDIR/$INTERFACE.conf" | cut -d : -f 1)
     if [[ -n $ln ]]; then
-        sed -i "$((ln-1)),$((ln+2))d" "$BASEDIR/$INTERFACE/$INTERFACE.conf"
+        sed -i "$((ln-1)),$((ln+2))d" "$BASEDIR/$INTERFACE.conf"
     fi
 }
 
 checkname() {
-    if ! grep -e "# ${USERNAME}$" "$BASEDIR/$INTERFACE/$INTERFACE.conf"; then
+    if ! grep -e "# ${USERNAME}$" "$BASEDIR/$INTERFACE.conf"; then
         echo ok
     fi
 }
 
 checkinterface() {
-    if [[ -f $BASEDIR/$INTERFACE/$INTERFACE.conf ]]; then
+    if [[ -f $BASEDIR/$INTERFACE.conf ]]; then
         echo "exists"
     fi
 }
