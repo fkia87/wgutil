@@ -105,7 +105,7 @@ AllowedIPs = 0.0.0.0/0
 Endpoint = $(getifip "$MAINIF"):$PORT
 EOF
 
-    cat << EOF >> $BASEDIR/"${INTERFACE}"/"${INTERFACE}".conf
+    cat << EOF >> $BASEDIR/"$INTERFACE".conf
 [Peer]
 # $USERNAME
 PublicKey = $CLIENT_PUBLIC_KEY
