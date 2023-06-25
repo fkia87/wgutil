@@ -121,6 +121,7 @@ genif() {
         echo -e "${YELLOW}If you prefer a new key please manually remove the file: \"$BASEDIR/$INTERFACE/$INTERFACE.privatekey\""
         echo -e "${YELLOW}then try again.\n${DECOLOR}"
     else
+        mkdir -p $BASEDIR/"$INTERFACE"
         umask 077; wg genkey | tee $BASEDIR/"$INTERFACE"/"$INTERFACE".privatekey | \
             wg pubkey > $BASEDIR/"$INTERFACE"/"$INTERFACE".publickey
     fi
