@@ -291,7 +291,7 @@ case $1 in
                 systemctl stop wg-quick@"$INTERFACE".service
                 read -r -p "Do you want to delete all interface configuration files? [y/N] " DEL
                 if [[ $DEL =~ ^[yY] ]]; then
-                    rm -f "$BASEDIR"/"$INTERFACE"*;
+                    rm -rf "$BASEDIR/${INTERFACE:?}"
                 else
                     echo -e "\nConfiguration files are remaining on the system."
                     echo -e "You can remove key files located in \"$BASEDIR\" manually.\n"
