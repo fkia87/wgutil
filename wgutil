@@ -284,8 +284,6 @@ case $1 in
                 echo -e "${GREEN}\nSuccessfully configured.\"$INTERFACE\"\n"
                 echo -en "${GREEN}\nInstall and configure ${BGREEN}\"Bind\"${GREEN} to listen on newly created interface"
                 echo -e " if necessary.\n${DECOLOR}"
-                ufw allow $PORT/udp > /dev/null 2>&1 || \
-                echo -e "${YELLOW}Couldn't open UDP port $PORT in firewall. Please open it manually.${DECOLOR}"
                 ;;
             delif)
                 systemctl stop wg-quick@"$INTERFACE".service
