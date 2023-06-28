@@ -250,7 +250,7 @@ case $1 in
         ;;
     lsuser)
         for cl in $(find "$BASEDIR/${2:-$DEFAULTIF}/clients/" -maxdepth 1 | sed 's/.*\///g;/^\s*$/d'); do
-            echo -e "$cl\t$(grep "Address" "$BASEDIR/${2:-$DEFAULTIF}/clients/$cl/$cl".conf | cut -d '=' -f2)"
+            echo -e "$cl\t\t\t$(grep "Address" "$BASEDIR/${2:-$DEFAULTIF}/clients/$cl/$cl".conf | cut -d '=' -f2)"
         done
         checkinstall
         ;;
