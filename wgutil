@@ -250,6 +250,7 @@ case $1 in
         ;;
     lsuser)
         tmp_output=/tmp/wg.txt
+        INTERFACE=${3:-$DEFAULTIF}
         WG_COLOR_MODE=always wg > "$tmp_output"
         while IFS= read -r user; do
             sed -i "s/$(cat ${user}/*.key.pub | sed 's/\//\\\//g')/${user##*/}/g" "$tmp_output"
