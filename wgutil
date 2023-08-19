@@ -253,7 +253,7 @@ case $1 in
         INTERFACE=${3:-$DEFAULTIF}
         WG_COLOR_MODE=always wg > "$tmp_output"
         while IFS= read -r user; do
-            sed -i "s/$(cat ${user}/*.key.pub | sed 's/\//\\\//g')/${user##*/}/g" "$tmp_output"
+            sed -i "s/$(cat "$user"/*.key.pub | sed 's/\//\\\//g')/${user##*/}/g" "$tmp_output"
         done < <(find "$BASEDIR/$INTERFACE/clients/" -maxdepth 1 -mindepth 1)
         cat "$tmp_output"; rm -f "$tmp_output"
         checkinstall
