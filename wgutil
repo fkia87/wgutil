@@ -254,6 +254,7 @@ case $1 in
         WG_COLOR_MODE=always wg > "$tmp_output"
         while IFS= read -r user; do
             sed -i "s/$(cat "$user"/*.key.pub | sed 's/\//\\\//g')/${user##*/}/g" "$tmp_output"
+            # sed 's/\//\\\//g' replaces all '/'' characters with '\/'  so the parent sed does work properly.
         done < <(find "$BASEDIR/$INTERFACE/clients/" -maxdepth 1 -mindepth 1)
         cat "$tmp_output"; rm -f "$tmp_output"
         checkinstall
