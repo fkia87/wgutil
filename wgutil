@@ -249,9 +249,12 @@ case $1 in
         esac
         ;;
     lsuser)
-        for cl in $(find "$BASEDIR/${2:-$DEFAULTIF}/clients/" -maxdepth 1 | sed 's/.*\///g;/^\s*$/d'); do
-            echo -e "$cl\t\t\t$(grep "Address" "$BASEDIR/${2:-$DEFAULTIF}/clients/$cl/$cl".conf | cut -d '=' -f2)"
-        done
+        tmp_output=/tmp/wg.txt
+        WG_COLOR_MODE=always wg > "$tmp_output"
+        while IFS= read -r user; do
+            sed -i "s/$(cat ${user}/*.key.pub | sed 's/\//\\\//g')/${user##*/}/g" "$tmp_output"
+        done < <(find "$BASEDIR/$INTERFACE/clients/" -maxdepth 1 -mindepth 1)
+        cat "$tmp_output"; rm -f "$tmp_output"
         checkinstall
         ;;
     getuser)
