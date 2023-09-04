@@ -8,22 +8,7 @@
 # TO DO:
 # -> add firewall function on "delif"
 
-requirements=("resources/utils" "resources/network" "resources/bash_colors")
-for ((i=0; i<${#requirements[@]}; i++)); do
-    if ! [[ -d resources ]] || ! [[ -f ${requirements[i]} ]]; then
-        rm -rf resources
-        wget https://github.com/fkia87/resources/archive/refs/heads/master.zip || \
-        { echo -e "Error downloading required files from Github." >&2; exit 1; }
-        unzip master.zip || { echo -e "Command \"unzip master.zip\" failed." >&2; exit 1; }
-        rm -f master.zip
-        mv resources* resources
-        break
-    fi
-done
-
-for file in ${requirements[@]}; do
-    source "$file"
-done
+set -euo pipefail
 
 BASEDIR='/etc/wireguard'
 DEFAULTIF="wg0"
