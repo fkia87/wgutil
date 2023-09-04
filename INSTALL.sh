@@ -22,7 +22,6 @@ resources_latest_version=$(
 
 install_resources
 
-install -m 755 ./wgutil /usr/bin/wgutil && \
-    { echo -e "Installed: /usr/bin/wgutil\nInstallation done."; exit 0; }
+install -v -m 755 ./wgutil /usr/bin/wgutil && exit 0
 
 exit 1
