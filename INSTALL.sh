@@ -10,7 +10,10 @@ install_resources() {
     wget https://github.com/fkia87/resources/archive/refs/tags/"$resources_latest_version".tar.gz || \
         { echo -e "Error downloading required files from Github." >&2; exit 1; }
     tar xvf ./"$resources_latest_version".tar.gz || { echo -e "Extraction failed." >&2; exit 1; }
-    resources-"${resources_latest_version/v/}"/INSTALL.sh && rm -rf ./resources*
+    cd ./resources-"${resources_latest_version/v/}" || exit 2
+    resources-"${resources_latest_version/v/}"/INSTALL.sh
+    cd .. || exit 2
+    rm -rf ./resources*
 }
 
 #################################################################################
