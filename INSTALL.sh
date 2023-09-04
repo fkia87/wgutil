@@ -29,4 +29,6 @@ for file in ${requirements[@]}; do
     install -m 644 "$file" "/etc/profile.d/${file##*/}.sh"
 done
 
+cleanup
+
 install -m 755 ./wgutil /usr/bin && echo "Installation done."
