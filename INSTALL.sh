@@ -17,7 +17,7 @@ install_resources() {
 
 resources_latest_version=$(
     curl -v https://github.com/fkia87/resources/releases/latest 2>&1 | \
-    grep -i location | rev | cut -d / -f 1 | rev | sed 's/\r//g' | cat -v
+    grep -i location | rev | cut -d / -f 1 | rev | sed 's/\r//g'
     )
 
 install_resources
