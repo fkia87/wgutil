@@ -1,5 +1,6 @@
 #!/bin/bash
 # shellcheck disable=SC1090,SC2068
+# shellcheck source=/dev/null
 
 # MAINIF is the name of server's main interface which is connected to the internet.
 # DIR is related to clients. (client's folder)
@@ -7,6 +8,8 @@
 
 # TO DO:
 # -> add firewall function on "delif"
+
+[[ -f /etc/profile ]] && . /etc/profile
 
 set -euo pipefail
 
