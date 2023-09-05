@@ -179,6 +179,7 @@ checkinstall_qrencode() {
 
 if [[ $1 == "--help" ]] || [[ $1 == "-h" ]]; then
     usage
+    exit
 elif [[ $1 != "install" ]] \
     && [[ $1 != "lsif" ]] \
     && [[ $1 != "lsuser" ]] \
