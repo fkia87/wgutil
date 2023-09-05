@@ -36,7 +36,7 @@ readparams() {
             ;;
         adduser)
             tmpip=$(calculate_ip)
-            [[ $tmpip == "range_full" ]] && { echo -e "\nIP range full. Please delete a user." >&2; exit 1; }
+            [[ $tmpip == "range_full" ]] && err "\nIP range full. Please delete a user." "1"
             read -r -p "Enter client Wireguard IP: [$tmpip] " LOCALIP
             while grep "$LOCALIP" $BASEDIR/"${INTERFACE}".conf > /dev/null && [[ -n $LOCALIP ]]
             do
@@ -76,7 +76,7 @@ setvars() {
     CLIENT_PRIVATE_KEY=$(cat "$DIR"/"$USERNAME".key)
     CLIENT_PUBLIC_KEY=$(cat "$DIR"/"$USERNAME".key.pub)
     SERVER_PUBLIC_KEY=$(wg show "$INTERFACE"| grep "public key" | cut -d ':' -f 2 | sed 's/^\s//')
-    [[ $SERVER_PUBLIC_KEY != "" ]] || { echo -e "${RED}Error fetching server's public key.${DECOLOR}"; exit 1; }
+    [[ $SERVER_PUBLIC_KEY != "" ]] || err "${RED}Error fetching server's public key.${DECOLOR}" "1"
     PORT=$(wg show "$INTERFACE" | grep "listening port" | cut -d ':' -f 2 | sed 's/^\s*//')
 }
 
@@ -166,14 +166,13 @@ startmsg() {
 
 checkinstall() {
     wg -v > /dev/null 2>&1 || { echo -e "${RED}\n\"Wireguard\" is not installed." >&2;
-    echo -e "${RED}You can run this command to install it:\n" >&2;
-    echo -e "${RED}       $0 install\n${DECOLOR}" >&2;
-    exit 1; }
+        echo -e "${RED}You can run this command to install it:\n" >&2;
+        err "${RED}       $0 install\n${DECOLOR}" "1"; }
 }
 
 checkinstall_qrencode() {
     qrencode -V > /dev/null 2>&1 || \
-        { echo -e "${RED}\n\"qrencode\" is not installed.\n${DECOLOR}" >&2; exit 1; }
+        err "${RED}\n\"qrencode\" is not installed.\n${DECOLOR}" "1"
 }
 
 ###############################################################################################################
@@ -184,8 +183,7 @@ elif [[ $1 != "install" ]] \
     && [[ $1 != "lsif" ]] \
     && [[ $1 != "lsuser" ]] \
     && [[ $# -lt 2 ]]; then
-    echo -e "${RED}\nInsufficient parameters.\n${DECOLOR}" >&2
-    exit 1
+    err "${RED}\nInsufficient parameters.\n${DECOLOR}" "1"
 fi
 
 unset command_not_found_handle
@@ -204,7 +202,7 @@ case $1 in
             exit 1
         fi
         # Check if given INTERFACE exists:
-        [[ $(checkinterface) == "exists" ]] || { echo -e "${RED}Invalid Interface.${DECOLOR}" >&2; exit 1; }
+        [[ $(checkinterface) == "exists" ]] || err "${RED}Invalid Interface.${DECOLOR}" "1"
         
         DIR="$BASEDIR/$INTERFACE/clients/$USERNAME"
         
@@ -213,7 +211,7 @@ case $1 in
                 checkinstall_qrencode
                 startmsg
                 readparams "$1"
-                [[ $(checkname) == "ok" ]] || { echo -e "${RED}Username exists.${DECOLOR}" >&2; exit 1; }
+                [[ $(checkname) == "ok" ]] || err "${RED}Username exists.${DECOLOR}" "1"
                 setvars
                 genconfs
                 systemctl reload-or-restart wg-quick@"$INTERFACE".service
@@ -253,7 +251,7 @@ case $1 in
         INTERFACE=${3:-$DEFAULTIF}
         DIR="$BASEDIR/$INTERFACE/clients/$USERNAME"
 
-        [[ ! -d $DIR ]] && { echo -e "${RED}User doesn't exist for given interface.${DECOLOR}" >&2; exit 1; }
+        [[ ! -d $DIR ]] && err "${RED}User doesn't exist for given interface.${DECOLOR}" "1"
 
         echo -e "${GREEN}\nUse this config on your client side:\n${DECOLOR}"
         cat "$DIR"/"${USERNAME}".conf
@@ -272,7 +270,7 @@ case $1 in
             addif)
                 startmsg
                 readparams "$1"
-                ! [[ $(checkinterface) == "exists" ]] || { echo "Interface exists."; exit 1; }
+                ! [[ $(checkinterface) == "exists" ]] || err "Interface exists." "1"
                 genif
                 systemctl enable wg-quick@"$INTERFACE".service --now
                 echo -e "${GREEN}\nSuccessfully configured.\"$INTERFACE\"\n"
@@ -298,7 +296,7 @@ case $1 in
         wg show interfaces
         ;;
     install)
-        wg -v > /dev/null 2>&1 && { echo -e "${YELLOW}\nAlready installed!\n${DECOLOR}" >&2; exit 1; }
+        wg -v > /dev/null 2>&1 && err "${YELLOW}\nAlready installed!\n${DECOLOR}" "1"
         enable_ipforward
         case $(os) in
             centos)
@@ -317,27 +315,25 @@ case $1 in
             *)
                 echo -e "${RED}Automatic installation is not supported for your distribution." >&2
                 echo -e "${RED}Please follow instructions here to install \"Wireguard\" manually:" >&2
-                echo -e "${RED}https://www.wireguard.com/install/\n${DECOLOR}" >&2
-                exit 1
+                err "${RED}https://www.wireguard.com/install/\n${DECOLOR}" "1"
                 ;;
         esac
         ;;
     backup)
         INTERFACE=${2:-$DEFAULTIF}
         current_dir="$PWD"
-        cd "$BASEDIR" || { echo "Couldn't access $BASEDIR" >&2; exit 1; }
+        cd "$BASEDIR" || err "Couldn't access $BASEDIR" "1"
         tar -cf "${HOSTNAME}_${INTERFACE}.backup.tar ./$INTERFACE"* && \
         echo -e "Backup created: $BASEDIR/${HOSTNAME}_${INTERFACE}.backup.tar"
         cd "$current_dir" || exit 1
-        exit 0
         ;;
     restore)
         BACKUP_FILE=$2
         [[ $(file -b --extension "$BACKUP_FILE") == "tar/gtar" ]] || \
-            { echo "Invalid backup file: $BACKUP_FILE" >&2; exit 1; }
+            err "Invalid backup file: $BACKUP_FILE" "1"
         current_dir="$PWD"
         cp "$BACKUP_FILE" "$BASEDIR"
-        cd "$BASEDIR" || { echo "Couldn't access $BASEDIR" >&2; exit 1; }
+        cd "$BASEDIR" || err "Couldn't access $BASEDIR" "1"
         tar -xf "$BASEDIR/${BACKUP_FILE##*/}"
         rm "$BASEDIR/${BACKUP_FILE##*/}"
         echo "Restored successfully."
