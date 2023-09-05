@@ -130,7 +130,6 @@ usage() {
     echo -e "       $0 lsuser [INTERFACE]" >&2
     echo -e "       $0 getuser USERNAME [INTERFACE]" >&2
     echo -e "       $0 install\n" >&2
-    exit 1
 }
 
 removeuser() {
@@ -202,6 +201,7 @@ case $1 in
         # Check if all parameters are present:
         if [[ -z $USERNAME ]] || [[ -z $INTERFACE ]]; then
             usage
+            exit 1
         fi
         # Check if given INTERFACE exists:
         [[ $(checkinterface) == "exists" ]] || { echo -e "${RED}Invalid Interface.${DECOLOR}" >&2; exit 1; }
@@ -266,6 +266,7 @@ case $1 in
         INTERFACE=$2
         if [[ -z $INTERFACE ]]; then
             usage
+            exit 1
         fi
         case $1 in
             addif)
@@ -344,5 +345,6 @@ case $1 in
         ;;
     *)
         usage
+        exit 1
         ;;
 esac
