@@ -124,12 +124,12 @@ EOF
 }
 
 usage() {
-    echo -e "\nUsage: $0 <adduser|deluser> USERNAME INTERFACE" >&2
-    echo -e "       $0 <addif|delif> INTERFACE" >&2
-    echo -e "       $0 lsif" >&2
-    echo -e "       $0 lsuser [INTERFACE]" >&2
-    echo -e "       $0 getuser USERNAME [INTERFACE]" >&2
-    echo -e "       $0 install\n" >&2
+    echo -e "\nUsage: ${0##*/} <adduser|deluser> USERNAME INTERFACE" >&2
+    echo -e "       ${0##*/} <addif|delif> INTERFACE" >&2
+    echo -e "       ${0##*/} lsif" >&2
+    echo -e "       ${0##*/} lsuser [INTERFACE]" >&2
+    echo -e "       ${0##*/} getuser USERNAME [INTERFACE]" >&2
+    echo -e "       ${0##*/} install\n" >&2
 }
 
 removeuser() {
