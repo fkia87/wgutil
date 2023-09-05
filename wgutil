@@ -197,7 +197,7 @@ case $1 in
     adduser | deluser)
         checkinstall
         USERNAME=$2
-        INTERFACE=$3
+        INTERFACE=${3:-$DEFAULTIF}
         
         # Check if all parameters are present:
         if [[ -z $USERNAME ]] || [[ -z $INTERFACE ]]; then
