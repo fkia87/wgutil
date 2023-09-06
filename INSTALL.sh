@@ -2,6 +2,7 @@
 # shellcheck disable=SC2068
 set -euo pipefail
 
+# IMPORT REQUIREMENTS ##################################################################################
 install_resources() {
     [[ $UID == "0" ]] || { echo "You are not root." >&2; exit 1; }
     resources_latest_version=$(
@@ -19,9 +20,8 @@ install_resources() {
     rm -rf ./resources*
 }
 
-#################################################################################
-
 install_resources
+#################################################################################
 
 install -v -m 755 ./wgutil /usr/bin/wgutil && exit 0
 
