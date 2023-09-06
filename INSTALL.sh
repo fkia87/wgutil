@@ -1,5 +1,6 @@
 #!/bin/bash
 # shellcheck disable=SC2068
+# shellcheck source=/dev/null
 set -euo pipefail
 
 # IMPORT REQUIREMENTS ##################################################################################
@@ -18,11 +19,10 @@ install_resources() {
     ./INSTALL.sh
     cd .. || exit 2
     rm -rf ./resources*
+    . /etc/profile
 }
 
 install_resources
 #################################################################################
 
-install -v -m 755 ./wgutil /usr/bin/wgutil && exit 0
-
-exit 1
+install -v -m 755 ./wgutil /usr/bin/wgutil
