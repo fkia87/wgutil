@@ -121,11 +121,13 @@ EOF
 }
 
 usage() {
-    echo -e "\nUsage: ${0##*/} <adduser|deluser> USERNAME INTERFACE" >&2
-    echo -e "       ${0##*/} <addif|delif> INTERFACE" >&2
+    echo -e "\nUsage: ${0##*/} <adduser|deluser> USERNAME [INTERFACE]" >&2
+    echo -e "       ${0##*/} <addif|delif> [INTERFACE]" >&2
     echo -e "       ${0##*/} lsif" >&2
     echo -e "       ${0##*/} lsuser [INTERFACE]" >&2
     echo -e "       ${0##*/} getuser USERNAME [INTERFACE]" >&2
+    echo -e "       ${0##*/} backup [INTERFACE]\n" >&2
+    echo -e "       ${0##*/} restore <path_to_backup>\n" >&2
     echo -e "       ${0##*/} install\n" >&2
 }
 
@@ -241,7 +243,6 @@ case $1 in
             # sed 's/\//\\\//g' replaces all '/' characters with '\/'  so the parent sed does work properly.
         done < <(find "$BASEDIR/$INTERFACE/clients/" -maxdepth 1 -mindepth 1)
         cat "$tmp_output"; rm -f "$tmp_output"
-        checkinstall
         ;;
     getuser)
         checkinstall_qrencode
@@ -249,42 +250,39 @@ case $1 in
         INTERFACE=${3:-$DEFAULTIF}
         DIR="$BASEDIR/$INTERFACE/clients/$USERNAME"
 
-        [[ ! -d $DIR ]] && err "${RED}User doesn't exist for given interface.${DECOLOR}" "1"
+        [[ ! -d $DIR ]] && err "${RED}User doesn't exist on interface \"$INTERFACE\".${DECOLOR}" "1"
 
         echo -e "${GREEN}\nUse this config on your client side:\n${DECOLOR}"
         cat "$DIR"/"${USERNAME}".conf
         echo -e "${GREEN}\nor this QR code:\n${DECOLOR}"
         qrencode -t UTF8 < "$DIR/$USERNAME.conf"
-        checkinstall
         ;;
     addif | delif)
         checkinstall
-        INTERFACE=$2
-        if [[ -z $INTERFACE ]]; then
-            usage
-            exit 1
-        fi
+        INTERFACE=${2:-$DEFAULTIF}
         case $1 in
             addif)
                 startmsg
                 readparams "$1"
                 ! [[ $(checkinterface) == "exists" ]] || err "Interface exists." "1"
                 genif
-                systemctl enable wg-quick@"$INTERFACE".service --now
+                set -x; systemctl enable wg-quick@"$INTERFACE".service --now; set +x;
                 echo -e "${GREEN}\nSuccessfully configured.\"$INTERFACE\"\n"
                 echo -en "${GREEN}\nInstall and configure ${BGREEN}\"Bind\"${GREEN} to listen on newly created interface"
                 echo -e " if necessary.\n${DECOLOR}"
                 ;;
             delif)
-                systemctl stop wg-quick@"$INTERFACE".service
+                read -r -p "Removing interface \"$INTERFACE\". Are you sure? [y/N] " SURE
+                ! [[ $SURE =~ ^[yY] ]] && exit 0
+                set -x; systemctl stop wg-quick@"$INTERFACE".service; set +x;
                 read -r -p "Do you want to delete all interface configuration files? [y/N] " DEL
                 if [[ $DEL =~ ^[yY] ]]; then
-                    rm -rf "$BASEDIR/${INTERFACE:?}"
+                    set -x; rm -rf "$BASEDIR/${INTERFACE:?}"; set +x;
                 else
                     echo -e "\nConfiguration files are remaining on the system."
                     echo -e "You can remove key files located in \"$BASEDIR\" manually.\n"
                 fi
-                rm -f "$BASEDIR/$INTERFACE.conf"
+                set -x; rm -f "$BASEDIR/$INTERFACE.conf"; set +x;
                 echo -e "${GREEN}\nSuccessfully removed \"$INTERFACE\".${DECOLOR}"
                 ;;
         esac
@@ -307,7 +305,7 @@ case $1 in
             ubuntu | debian)
                 install_pkg wireguard
                 ;;
-            fedora | almalinux)
+            fedora | almalinux | rocky)
                 install_pkg wireguard-tools
                 ;;
             *)
@@ -322,7 +320,7 @@ case $1 in
         current_dir="$PWD"
         cd "$BASEDIR" || err "Couldn't access $BASEDIR" "1"
         tar -cf "${HOSTNAME}_${INTERFACE}.backup.tar ./$INTERFACE"* && \
-        echo -e "Backup created: $BASEDIR/${HOSTNAME}_${INTERFACE}.backup.tar"
+            echo -e "Backup created: $BASEDIR/${HOSTNAME}_${INTERFACE}.backup.tar"
         cd "$current_dir" || exit 1
         ;;
     restore)
@@ -334,7 +332,9 @@ case $1 in
         cd "$BASEDIR" || err "Couldn't access $BASEDIR" "1"
         tar -xf "$BASEDIR/${BACKUP_FILE##*/}"
         rm "$BASEDIR/${BACKUP_FILE##*/}"
-        echo "Restored successfully."
+        echo -e "${GREEN}Restored successfully.${DECOLOR}"
+        echo -e "You may start using the interface via:"
+        echo -e "\n    systemctl enable --now wg-quick@${BOLD}<INTERFACE>${DECOLOR}.service.\n"
         cd "$current_dir" || exit 1
         ;;
     *)
