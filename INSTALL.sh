@@ -6,6 +6,7 @@ set -euo pipefail
 # IMPORT REQUIREMENTS ##################################################################################
 install_resources() {
     [[ $UID == "0" ]] || { echo "You are not root." >&2; exit 1; }
+    local resources_latest_version
     resources_latest_version=$(
         curl -v https://github.com/fkia87/resources/releases/latest 2>&1 | \
         grep -i location | rev | cut -d / -f 1 | rev | sed 's/\r//g'
