@@ -16,7 +16,7 @@ install_resources() {
         { echo -e "Error downloading required files from Github." >&2; exit 1; }
     tar xvf ./"$resources_latest_version".tar.gz || { echo -e "Extraction failed." >&2; exit 1; }
     cd ./resources-"${resources_latest_version/v/}" || exit 2
-    ./INSTALL.sh
+    ./INSTALL.sh -q
     cd .. || exit 2
     rm -rf ./resources*
     . /etc/profile
