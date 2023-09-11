@@ -1,7 +1,6 @@
 #!/bin/bash
 # shellcheck disable=SC2068
 # shellcheck source=/dev/null
-set -euo pipefail
 
 # IMPORT REQUIREMENTS ##################################################################################
 install_resources() {
