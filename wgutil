@@ -25,7 +25,7 @@ readparams() {
             done
             read -r -p "Enter listening port: " PORT
             while ss --no-header -4lun | awk '{print$4}' | cut -d : -f2 | grep $PORT > /dev/null \
-            || ! ((1024 < PORT && PORT < 65536))
+                || ! ((1024 < PORT && PORT < 65536))
             do
                 echo -e "\nBusy or invalid port. Try a different port number.\n"
                 read -r -p "Enter listening port: " PORT
@@ -64,8 +64,10 @@ setvars() {
         wg genkey | tee "$DIR"/"$USERNAME".key | wg pubkey | \
         tee "$DIR"/"$USERNAME".key.pub > /dev/null
     else
-        echo -e "${YELLOW}\nA private key already exists in \"$DIR\" for given username. We'll use that key."
-        echo -e "${YELLOW}If you prefer a new key please manually remove the file: \"$DIR/$USERNAME.key\""
+        echo -en "${YELLOW}\nA private key already exists in \"$DIR\" for given username. "
+        echo -e "We'll use that key."
+        echo -en "${YELLOW}If you prefer a new key please manually remove the "
+        echo -e "file: \"$DIR/$USERNAME.key\""
         echo -e "${YELLOW}then try again.\n${DECOLOR}"
         wg pubkey < "$DIR"/"$USERNAME".key | tee "$DIR"/"$USERNAME".key.pub > /dev/null
     fi
@@ -73,7 +75,8 @@ setvars() {
     CLIENT_PRIVATE_KEY=$(cat "$DIR"/"$USERNAME".key)
     CLIENT_PUBLIC_KEY=$(cat "$DIR"/"$USERNAME".key.pub)
     SERVER_PUBLIC_KEY=$(wg show "$INTERFACE"| grep "public key" | cut -d ':' -f 2 | sed 's/^\s//')
-    [[ $SERVER_PUBLIC_KEY != "" ]] || err "${RED}Error fetching server's public key.${DECOLOR}" "1"
+    [[ $SERVER_PUBLIC_KEY != "" ]] || \
+        err "${RED}Error fetching server's public key.${DECOLOR}" "1"
     PORT=$(wg show "$INTERFACE" | grep "listening port" | cut -d ':' -f 2 | sed 's/^\s*//')
 }
 
@@ -102,8 +105,10 @@ EOF
 genif() {
     mkdir -p $BASEDIR; chmod 0700 $BASEDIR
     if [[ -f $BASEDIR/$INTERFACE/$INTERFACE.privatekey ]]; then
-        echo -e "${YELLOW}\nA private key already exists in \"$BASEDIR\" for given interface. We'll use that key."
-        echo -e "${YELLOW}If you prefer a new key please manually remove the file: \"$BASEDIR/$INTERFACE/$INTERFACE.privatekey\""
+        echo -en "${YELLOW}\nA private key already exists in \"$BASEDIR\" for given interface. "
+        echo -e "We'll use that key."
+        echo -en "${YELLOW}If you prefer a new key please manually remove the file: "
+        echo -e "\"$BASEDIR/$INTERFACE/$INTERFACE.privatekey\""
         echo -e "${YELLOW}then try again.\n${DECOLOR}"
     else
         mkdir -p $BASEDIR/"$INTERFACE"
@@ -115,8 +120,14 @@ genif() {
 Address = ${IFLOCALIP}/24
 ListenPort = ${PORT}
 PrivateKey = $(cat $BASEDIR/"$INTERFACE"/"$INTERFACE".privatekey)
-PostUp = iptables -I INPUT -p udp --dport $PORT -j ACCEPT; iptables -I FORWARD -o %i -j ACCEPT; iptables -I FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o $MAINIF -j MASQUERADE
-PostDown = iptables -D INPUT -p udp --dport $PORT -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o $MAINIF -j MASQUERADE
+PostUp = iptables -I INPUT -p udp --dport $PORT -j ACCEPT; \
+iptables -I FORWARD -o %i -j ACCEPT; \
+iptables -I FORWARD -i %i -j ACCEPT; \
+iptables -t nat -A POSTROUTING -o $MAINIF -j MASQUERADE
+PostDown = iptables -D INPUT -p udp --dport $PORT -j ACCEPT; \
+iptables -D FORWARD -o %i -j ACCEPT; \
+iptables -D FORWARD -i %i -j ACCEPT; \
+iptables -t nat -D POSTROUTING -o $MAINIF -j MASQUERADE
 EOF
 }
 
@@ -154,7 +165,8 @@ startmsg() {
     find_mainif
     while :
     do
-        echo -en "\nInterface ${BLUE}[$MAINIF]${DECOLOR} with IP address ${BLUE}[$(getifip "$MAINIF")]${DECOLOR}"
+        echo -en "\nInterface ${BLUE}[$MAINIF]${DECOLOR} with IP address "
+        echo -en "${BLUE}[$(getifip "$MAINIF")]${DECOLOR}"
         echo -e " is selected as main external interface for this server."
         read -r -p "Do you wish to continue? [Y/n]" START
         echo ""
@@ -174,7 +186,7 @@ checkinstall_qrencode() {
         err "${RED}\n\"qrencode\" is not installed.\n${DECOLOR}" "1"
 }
 
-###############################################################################################################
+###################################################################################################
 
 if [[ $1 == "--help" ]] || [[ $1 == "-h" ]]; then
     usage
@@ -237,10 +249,12 @@ case $1 in
     lsuser)
         tmp_output=/tmp/wg.txt
         INTERFACE=${2:-$DEFAULTIF}
-        WG_COLOR_MODE=always wg show "$INTERFACE" > "$tmp_output" || { rm -f "$tmp_output"; exit 1; }
+        WG_COLOR_MODE=always wg show "$INTERFACE" > "$tmp_output" || \
+            { rm -f "$tmp_output"; exit 1; }
         while IFS= read -r user; do
             sed -i "s/$(cat "$user"/*.key.pub | sed 's/\//\\\//g')/${user##*/}/g" "$tmp_output"
-            # sed 's/\//\\\//g' replaces all '/' characters with '\/'  so the parent sed does work properly.
+            # sed 's/\//\\\//g' replaces all '/' characters with '\/'  so the 
+            # parent sed does work properly.
         done < <(find "$BASEDIR/$INTERFACE/clients/" -maxdepth 1 -mindepth 1)
         cat "$tmp_output"; rm -f "$tmp_output"
         ;;
@@ -250,7 +264,8 @@ case $1 in
         INTERFACE=${3:-$DEFAULTIF}
         DIR="$BASEDIR/$INTERFACE/clients/$USERNAME"
 
-        [[ ! -d $DIR ]] && err "${RED}User doesn't exist on interface \"$INTERFACE\".${DECOLOR}" "1"
+        [[ ! -d $DIR ]] && \
+            err "${RED}User doesn't exist on interface \"$INTERFACE\".${DECOLOR}" "1"
 
         echo -e "${GREEN}\nUse this config on your client side:\n${DECOLOR}"
         cat "$DIR"/"${USERNAME}".conf
@@ -268,7 +283,8 @@ case $1 in
                 genif
                 set -x; systemctl enable wg-quick@"$INTERFACE".service --now; set +x;
                 echo -e "${GREEN}\nSuccessfully configured.\"$INTERFACE\"\n"
-                echo -en "${GREEN}\nInstall and configure ${BGREEN}\"Bind\"${GREEN} to listen on newly created interface"
+                echo -en "${GREEN}\nInstall and configure ${BGREEN}\"Bind\"${GREEN} to listen on "
+                echo -en "newly created interface"
                 echo -e " if necessary.\n${DECOLOR}"
                 ;;
             delif)
@@ -310,7 +326,8 @@ case $1 in
                 ;;
             *)
                 echo -e "${RED}Automatic installation is not supported for your distribution." >&2
-                echo -e "${RED}Please follow instructions here to install \"Wireguard\" manually:" >&2
+                echo -en "${RED}Please follow instructions here to " >&2
+                echo -e "install \"Wireguard\" manually:" >&2
                 err "${RED}https://www.wireguard.com/install/\n${DECOLOR}" "1"
                 ;;
         esac
