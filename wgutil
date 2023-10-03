@@ -146,6 +146,8 @@ removeuser() {
     ln=$(grep -nrm 1 "$USERNAME" "$BASEDIR/$INTERFACE.conf" | cut -d : -f 1)
     if [[ -n $ln ]]; then
         sed -i "$((ln-1)),$((ln+2))d" "$BASEDIR/$INTERFACE.conf"
+    else
+        err "No such user." "1"
     fi
 }
 
@@ -234,12 +236,8 @@ case $1 in
                 qrencode -t UTF8 < "$DIR/$USERNAME.conf"
                 ;;
             deluser)
-                read -r -p "Do you want to delete all user's configuration files? [y/N] " DEL
-                if [[ $DEL == "y" ]] || [[ $DEL == "Y" ]]; then
-                    rm -rf "$DIR";
-                else
-                    echo -e "\nConfiguration files are remaining on the system.\n"
-                fi
+                [[ -d $DIR ]] && read -r -p "Do you want to delete all user's configuration files? [y/N] " DEL
+                { [[ $DEL == "y" ]] || [[ $DEL == "Y" ]]; } && rm -rf "$DIR"
                 removeuser
                 systemctl reload-or-restart wg-quick@"$INTERFACE".service
                 echo -e "${GREEN}User \"$USERNAME\" removed successfully.${DECOLOR}"
