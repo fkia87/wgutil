@@ -145,7 +145,9 @@ usage() {
 }
 
 removeuser() {
-    ln=$(grep -nrm 1 "$USERNAME" "$BASEDIR/$INTERFACE.conf" | cut -d : -f 1)
+    set +o pipefail
+    ln=$(grep -nm 1 "^# $USERNAME$" "$BASEDIR/$INTERFACE.conf" | cut -d : -f 1)
+    set -o pipefail
     if [[ -n $ln ]]; then
         sed -i "$((ln-1)),$((ln+2))d" "$BASEDIR/$INTERFACE.conf"
     else
@@ -174,7 +176,7 @@ startmsg() {
         echo -e " is selected as main external interface for this server."
         read -r -p "Do you wish to continue? [Y/n]" START
         echo ""
-        if [[ $START =~ ^[yY] ]] || [[ $START == "" ]]; then break; fi
+        { [[ $START =~ ^[yY] ]] || [[ $START == "" ]]; } && break
         [[ $START =~ ^[nN] ]] && exit
     done
 }
@@ -239,7 +241,7 @@ case $1 in
                 ;;
             deluser)
                 [[ -d $DIR ]] && read -r -p "Do you want to delete all user's configuration files? [y/N] " DEL
-                { [[ $DEL == "y" ]] || [[ $DEL == "Y" ]]; } && rm -rf "$DIR"
+                [[ $DEL =~ ^[yY] ]] && rm -rf "$DIR"
                 removeuser
                 systemctl reload-or-restart wg-quick@"$INTERFACE".service
                 echo -e "${GREEN}User \"$USERNAME\" removed successfully.${DECOLOR}"
