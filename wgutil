@@ -12,6 +12,8 @@ set -euo pipefail
 
 BASEDIR='/etc/wireguard'
 DEFAULTIF="wg0"
+
+DEL='No'
 declare -i PORT
 
 readparams() {
