@@ -240,7 +240,9 @@ case $1 in
                 qrencode -t UTF8 < "$DIR/$USERNAME.conf"
                 ;;
             deluser)
-                [[ -d $DIR ]] && read -r -p "Do you want to delete all user's configuration files? [y/N] " DEL
+                [[ -d $DIR ]] \
+                    && { echo "Do you want to delete all user's configuration files? [y/N] "
+                        read -r DEL; }
                 [[ $DEL =~ ^[yY] ]] && rm -rf "$DIR"
                 removeuser
                 systemctl reload-or-restart wg-quick@"$INTERFACE".service
