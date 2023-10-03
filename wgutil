@@ -241,7 +241,7 @@ case $1 in
                 ;;
             deluser)
                 [[ -d $DIR ]] \
-                    && { echo "Do you want to delete all user's configuration files? [y/N] "
+                    && { echo -en "Do you want to delete all user's configuration files? [y/N] "
                         read -r DEL; }
                 [[ $DEL =~ ^[yY] ]] && rm -rf "$DIR"
                 removeuser
