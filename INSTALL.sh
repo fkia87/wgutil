@@ -5,6 +5,7 @@
 comp_location='/etc/bash_completion.d/'
 
 # IMPORT REQUIREMENTS #############################################################################
+
 install_resources() {
     [[ $UID == "0" ]] || { echo "You are not root." >&2; exit 1; }
     local resources_latest_version
@@ -25,10 +26,9 @@ install_resources() {
 }
 
 install_resources
+
 ###################################################################################################
 
 install -v -m 755 ./wgutil /usr/bin/wgutil
 mkdir -p "$comp_location"
 install -v -m 644 ./wgutil-completion.bash "$comp_location"
-complete -r wgutil
-source "${comp_location}wgutil-completion.bash"
