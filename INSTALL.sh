@@ -30,10 +30,10 @@ install_resources
 ###################################################################################################
 
 install -v -m 755 ./wgutil /usr/bin/wgutil && \
-    echo -e "Installation Successfull."
+    echo -e "\nInstallation Successfull.\n"
 mkdir -p "$comp_location"
 install -v -m 644 ./wgutil-completion.bash "$comp_location" && \
     {
-        echo -e "Please run this command to activate \"wgutil\" auto completion:\n";
-        echo -e "source ${comp_location}wgutil-completion.bash";
+        echo -e "\nPlease run this command to activate \"wgutil\" auto completion:\n";
+        echo -e "    source ${comp_location}wgutil-completion.bash\n";
     }
