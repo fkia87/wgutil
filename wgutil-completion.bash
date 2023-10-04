@@ -9,18 +9,18 @@ _wgutil_completions() {
     local cur="${COMP_WORDS[COMP_CWORD]}"
     local prev="${COMP_WORDS[COMP_CWORD-1]}"
     local p_prev="${COMP_WORDS[COMP_CWORD-2]}"
-    local opts="adduser deluser addif delif lsuser getuser backup restore install"
+    local opts="adduser deluser addif delif lsuser getuser backup restore install lsif"
 
     case "$prev" in
+        wgutil)
+            mapfile -t COMPREPLY < <(compgen -W "$opts" -- "$cur")
+            ;;
         deluser|getuser)
             mapfile -t COMPREPLY < <(compgen -W "$(ls ${clients_folder})" -- "$cur")
             ;;
         lsuser|delif|backup)
             mapfile -t COMPREPLY < <(compgen -W "$(basename -s '.conf' \
                 "$(ls ${iface_folder}/*.conf )")" -- "$cur")
-            ;;
-        wgutil)
-            mapfile -t COMPREPLY < <(compgen -W "$opts" -- "$cur")
             ;;
         restore)
             mapfile -t COMPREPLY < <(compgen -o nospace -f -- "$cur")
