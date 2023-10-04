@@ -30,7 +30,7 @@ install_resources
 ###################################################################################################
 
 install -v -m 755 ./wgutil /usr/bin/wgutil && \
-    echo -e "\nInstallation Successfull.\n"
+    echo -e "\nInstallation Successfull!\n"
 mkdir -p "$comp_location"
 install -v -m 644 ./wgutil-completion.bash "$comp_location" && \
     {
