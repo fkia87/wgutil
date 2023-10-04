@@ -2,7 +2,8 @@
 # shellcheck disable=SC2207,SC2068
 
 _wgutil_user_generator() {
-    find "$clients_folder" -mindepth 1 -type d | rev | cut -d '/' -f 1 | rev
+    # shellcheck disable=SC2086
+    find $clients_folder -mindepth 1 -maxdepth 1 -type d | rev | cut -d '/' -f 1 | rev
 }
 
 _wgutil_iface_generator() {
