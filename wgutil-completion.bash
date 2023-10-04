@@ -31,7 +31,7 @@ _wgutil_completions() {
             mapfile -t COMPREPLY < <(compgen -W "$(_wgutil_iface_generator)" -- "$cur")
             ;;
         restore)
-            mapfile -t COMPREPLY < <(compgen -o nospace -f -- "$cur")
+            mapfile -t COMPREPLY < <(compgen -f -- "$cur")
             ;;
     esac
 
