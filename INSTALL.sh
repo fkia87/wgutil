@@ -30,3 +30,5 @@ install_resources
 install -v -m 755 ./wgutil /usr/bin/wgutil
 mkdir -p "$comp_location"
 install -v -m 644 ./wgutil-completion.bash "$comp_location"
+complete -r wgutil
+source "$comp_location"wgutil-completion.bash
