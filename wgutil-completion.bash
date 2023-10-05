@@ -11,10 +11,9 @@ _wgutil_iface_generator() {
 }
 
 _wgutil_completions() {
-    # local cur prev opts
+    COMPREPLY=()
     local clients_folder='/etc/wireguard/*/clients/'
     local iface_folder='/etc/wireguard/'
-    COMPREPLY=()
     local cur="${COMP_WORDS[COMP_CWORD]}"
     local prev="${COMP_WORDS[COMP_CWORD-1]}"
     local p_prev="${COMP_WORDS[COMP_CWORD-2]}"
