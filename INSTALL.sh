@@ -16,7 +16,7 @@ install_resources() {
     echo -e "Downloading resources..."
     rm -rf "$resources_latest_version".tar.gz
     wget https://github.com/fkia87/resources/archive/refs/tags/"$resources_latest_version".tar.gz \
-        | { echo -e "Error downloading required files from Github." >&2; exit 1; }
+        || { echo -e "Error downloading required files from Github." >&2; exit 1; }
     tar xvf ./"$resources_latest_version".tar.gz || { echo -e "Extraction failed." >&2; exit 1; }
     cd ./resources-"${resources_latest_version/v/}" || exit 2
     ./INSTALL.sh -q
