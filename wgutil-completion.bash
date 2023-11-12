@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2207,SC2068
+# cSpell:disable
 
 _wgutil_user_generator() {
     # shellcheck disable=SC2086

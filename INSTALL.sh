@@ -4,6 +4,8 @@
 
 comp_location='/etc/bash_completion.d/'
 
+# cSpell:disable
+
 # IMPORT REQUIREMENTS #############################################################################
 
 install_resources() {
