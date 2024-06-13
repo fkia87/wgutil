@@ -13,11 +13,12 @@ set -uo pipefail
 
 BASEDIR='/etc/wireguard'
 DEFAULTIF="wg0"
+DEFAULTDNS="8.8.8.8"
 
 DEL='No'
 declare -i PORT
 
-readparams() {
+read_parameters() {
     case $1 in
         addif)
             read -r -p "Enter IP for interface: " IFLOCALIP
@@ -38,6 +39,7 @@ readparams() {
             tmpip=$(calculate_ip)
             [[ $tmpip == "range_full" ]] && err "\nIP range full. Please delete a user." "1"
             read -r -p "Enter client Wireguard IP: [$tmpip] " LOCALIP
+            read -r -p "Enter client's DNS server IP: [$DEFAULTDNS] " DNS
             while grep "$LOCALIP" $BASEDIR/"${INTERFACE}".conf > /dev/null && [[ -n $LOCALIP ]]
             do
                 echo -e "\nIP address in use. Try a different one.\n"
@@ -61,7 +63,7 @@ calculate_ip() {
     echo "$o1.$o2.$o3.$o4"
 }
 
-setvars() {
+set_variables() {
     mkdir -p "$DIR"
     if ! test -f "$DIR"/"$USERNAME".key; then
         wg genkey | tee "$DIR"/"$USERNAME".key | wg pubkey | \
@@ -83,12 +85,12 @@ setvars() {
     PORT=$(wg show "$INTERFACE" | grep "listening port" | cut -d ':' -f 2 | sed 's/^\s*//')
 }
 
-genconfs() {
+generate_configs() {
     cat << EOF > "$DIR"/"${USERNAME}".conf
 [Interface]
 PrivateKey = $CLIENT_PRIVATE_KEY
 Address = ${LOCALIP}/32
-DNS = $(getifip "$INTERFACE")
+DNS = ${DNS}
 
 [Peer]
 PublicKey = $SERVER_PUBLIC_KEY
@@ -105,7 +107,7 @@ EOF
     qrencode -s 6 -o "$DIR"/"$USERNAME".png < "$DIR"/"$USERNAME".conf
 }
 
-genif() {
+generate_interface_config() {
     mkdir -p $BASEDIR; chmod 0700 $BASEDIR
     if [[ -f $BASEDIR/$INTERFACE/$INTERFACE.privatekey ]]; then
         echo -en "${YELLOW}\nA private key already exists in \"$BASEDIR\" for given interface. "
@@ -162,7 +164,7 @@ checkname() {
     fi
 }
 
-checkinterface() {
+check_interface_exists() {
     if [[ -f $BASEDIR/$INTERFACE.conf ]]; then
         echo "exists"
     fi
@@ -182,13 +184,13 @@ startmsg() {
     done
 }
 
-checkinstall() {
+check_wireguard_installed() {
     wg -v > /dev/null 2>&1 || { echo -e "${RED}\n\"Wireguard\" is not installed." >&2;
         echo -e "${RED}You can run this command to install it:\n" >&2;
         err "${RED}       $0 install\n${DECOLOR}" "1"; }
 }
 
-checkinstall_qrencode() {
+check_qrencode_installed() {
     qrencode -V > /dev/null 2>&1 || \
         err "${RED}\n\"qrencode\" is not installed.\n${DECOLOR}" "1"
 }
@@ -211,7 +213,7 @@ checkuser
 
 case $1 in
     adduser | deluser)
-        checkinstall
+        check_wireguard_installed
         USERNAME=$2
         INTERFACE=${3:-$DEFAULTIF}
         
@@ -221,18 +223,18 @@ case $1 in
             exit 1
         fi
         # Check if given INTERFACE exists:
-        [[ $(checkinterface) == "exists" ]] || err "${RED}Invalid Interface.${DECOLOR}" "1"
+        [[ $(check_interface_exists) == "exists" ]] || err "${RED}Invalid Interface.${DECOLOR}" "1"
         
         DIR="$BASEDIR/$INTERFACE/clients/$USERNAME"
         
         case $1 in
             adduser)
-                checkinstall_qrencode
+                check_qrencode_installed
                 startmsg
-                readparams "$1"
+                read_parameters "$1"
                 [[ $(checkname) == "ok" ]] || err "${RED}Username exists.${DECOLOR}" "1"
-                setvars
-                genconfs
+                set_variables
+                generate_configs
                 systemctl reload-or-restart wg-quick@"$INTERFACE".service
                 echo -e "${GREEN}\nUser added successfully!${DECOLOR}"
                 echo -e "${GREEN}\nUse this config on your client side:\n${DECOLOR}"
@@ -264,7 +266,7 @@ case $1 in
         cat "$tmp_output"; rm -f "$tmp_output"
         ;;
     getuser)
-        checkinstall_qrencode
+        check_qrencode_installed
         USERNAME=$2
         INTERFACE=${3:-$DEFAULTIF}
         DIR="$BASEDIR/$INTERFACE/clients/$USERNAME"
@@ -278,25 +280,22 @@ case $1 in
         qrencode -t UTF8 < "$DIR/$USERNAME.conf"
         ;;
     addif | delif)
-        checkinstall
+        check_wireguard_installed
         INTERFACE=${2:-$DEFAULTIF}
         case $1 in
             addif)
                 startmsg
-                readparams "$1"
-                ! [[ $(checkinterface) == "exists" ]] || err "Interface exists." "1"
-                genif
+                read_parameters "$1"
+                ! [[ $(check_interface_exists) == "exists" ]] || err "Interface exists." "1"
+                generate_interface_config
                 set -x; systemctl enable wg-quick@"$INTERFACE".service --now; set +x;
-                echo -e "${GREEN}\nSuccessfully configured.\"$INTERFACE\"\n"
-                echo -en "${GREEN}\nInstall and configure ${BGREEN}\"Bind\"${GREEN} to listen on "
-                echo -en "newly created interface"
-                echo -e " if necessary.\n${DECOLOR}"
+                echo -e "${GREEN}\n$INTERFACE: Successfully configured.${DECOLOR}\n"
                 ;;
             delif)
                 read -r -p "Removing interface \"$INTERFACE\". Are you sure? [y/N] " SURE
                 ! [[ $SURE =~ ^[yY] ]] && exit 0
                 set -x; systemctl stop wg-quick@"$INTERFACE".service; set +x;
-                read -r -p "Do you want to delete all interface configuration files? [y/N] " DEL
+                read -r -p "Do you want to delete all related configuration files? [y/N] " DEL
                 if [[ $DEL =~ ^[yY] ]]; then
                     set -x; rm -rf "$BASEDIR/${INTERFACE:?}"; set +x;
                 else
@@ -309,7 +308,7 @@ case $1 in
         esac
         ;;
     lsif)
-        checkinstall
+        check_wireguard_installed
         wg show interfaces
         ;;
     install)
