@@ -39,13 +39,14 @@ read_parameters() {
             tmpip=$(calculate_ip)
             [[ $tmpip == "range_full" ]] && err "\nIP range full. Please delete a user." "1"
             read -r -p "Enter client Wireguard IP: [$tmpip] " LOCALIP
-            read -r -p "Enter client's DNS server IP: [$DEFAULTDNS] " DNS
             while grep "$LOCALIP" $BASEDIR/"${INTERFACE}".conf > /dev/null && [[ -n $LOCALIP ]]
             do
                 echo -e "\nIP address in use. Try a different one.\n"
                 read -r -p "Enter client Wireguard IP: [$tmpip] " LOCALIP
             done
             [[ -z $LOCALIP ]] && LOCALIP=$tmpip
+            read -r -p "Enter client's DNS server IP: [$DEFAULTDNS] " DNS
+            [[ -z $DNS ]] && DNS=$DEFAULTDNS
             ;;
     esac
 }
