@@ -102,7 +102,7 @@ read_parameters() {
             done
             read -r -p "Enter listening port: " PORT
             while ss --no-header -4lun | awk '{print$4}' | cut -d : -f2 | grep $PORT > /dev/null \
-                || ! ((1024 < PORT && PORT < 65536))
+                || ! ((1 < PORT && PORT < 65536))
             do
                 echo -e "\nBusy or invalid port. Try a different port number.\n"
                 read -r -p "Enter listening port: " PORT
