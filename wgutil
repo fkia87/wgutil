@@ -32,8 +32,8 @@ err() {
 find_mainif() {
 # Sets variable "MAINIF" to the name of the network interface through which 
 # system connects to internet.
-iflist=( $(find /sys/class/net/ | rev | cut -d / -f1 | rev | sed '/^$/d') )
-tmp=( $(\ip route |grep default |sed -e 's/^\s*//;s/\s/\n/g;') )
+mapfile -t iflist < <(find /sys/class/net/ | rev | cut -d / -f1 | rev | sed '/^$/d')
+mapfile -t tmp < <(\ip route |grep default |sed -e 's/^\s*//;s/\s/\n/g;')
 
 for var in "${tmp[@]}"; do
     [[ " ${iflist[*]} " =~ ${var} ]] && MAINIF=$var
