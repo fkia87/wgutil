@@ -362,7 +362,10 @@ case $1 in
                 read_parameters "$1"
                 ! [[ $(check_interface_exists) == "exists" ]] || err "Interface exists." "1"
                 generate_interface_config
-                set -x; systemctl enable wg-quick@"$INTERFACE".service --now; set +x;
+                set -x
+                systemctl enable wg-quick@"$INTERFACE".service --now || \
+                    { set +x; err "Failed to start unit."; }
+                set +x
                 echo -e "${GREEN}\n$INTERFACE: Successfully configured.${DECOLOR}\n"
                 ;;
             delif)
