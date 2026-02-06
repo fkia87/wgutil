@@ -363,7 +363,8 @@ case $1 in
                 ! [[ $(check_interface_exists) == "exists" ]] || err "Interface exists." "1"
                 generate_interface_config
                 set -x
-                systemctl enable wg-quick@"$INTERFACE".service --now || \
+                systemctl enable wg-quick@"$INTERFACE".service
+                systemctl start wg-quick@"$INTERFACE".service || \
                     { set +x; err "Failed to start unit."; }
                 set +x
                 echo -e "${GREEN}\n$INTERFACE: Successfully configured.${DECOLOR}\n"
