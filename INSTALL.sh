@@ -3,6 +3,11 @@
 # shellcheck source=/dev/null
 # cSpell:disable
 
+checkuser() {
+    [[ $UID == "0" ]] || { echo "You are not root." >&2; exit 1; }
+}
+checkuser
+
 # comp_location='/etc/bash_completion.d'
 comp_location=/usr/share/bash-completion/completions
 comp_script=./wgutil-completion.bash
