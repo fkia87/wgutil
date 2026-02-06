@@ -31,18 +31,20 @@ err() {
 }
 
 find_mainif() {
-# Sets variable "MAINIF" to the name of the network interface through which 
-# system connects to internet.
-mapfile -t iflist < <(find /sys/class/net/ | rev | cut -d / -f1 | rev | sed '/^$/d')
-mapfile -t tmp < <(\ip route |grep default |sed -e 's/^\s*//;s/\s/\n/g;')
+    # Sets variable "MAINIF" to the name of the network interface through which 
+    # system connects to internet.
+    # mapfile -t iflist < <(find /sys/class/net/ | rev | cut -d / -f1 | rev | sed '/^$/d')
+    # mapfile -t tmp < <(\ip route |grep default |sed -e 's/^\s*//;s/\s/\n/g;')
 
-for var in "${tmp[@]}"; do
-    [[ " ${iflist[*]} " =~ ${var} ]] && MAINIF=$var
-done
-if [[ -z $MAINIF ]]; then
-    echo -e "\nCouldn't determine the main interface on the system.\n" >&2
-    return 1
-fi
+    # for var in "${tmp[@]}"; do
+    #     [[ " ${iflist[*]} " =~ ${var} ]] && MAINIF=$var
+    # done
+    MAINIF=$(\ip -4 route show default 2>/dev/null | \
+        awk '{for(i=1;i<=NF;i++) if ($i=="dev") {print $(i+1); exit}}')
+    if [[ -z $MAINIF ]]; then
+        echo -e "\nCouldn't determine the main interface on the system.\n" >&2
+        return 1
+    fi
 }
 
 checkuser() {
